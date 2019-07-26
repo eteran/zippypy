@@ -11,32 +11,40 @@
 
 #pragma once
 
-#define DISALLOW_COPY_AND_ASSIGN(Cls) private: Cls(const Cls&) = delete; Cls& operator=(const Cls&) = delete;
+#define DISALLOW_COPY_AND_ASSIGN(Cls) \
+private:                              \
+	Cls(const Cls &) = delete;        \
+	Cls &operator=(const Cls &) = delete;
 
 typedef unsigned short ushort;
-typedef unsigned char uchar;
-typedef unsigned int uint;
+typedef unsigned char  uchar;
+typedef unsigned int   uint;
 
-template<typename T>
+template <typename T>
 inline bool checkFlag(T var, T flag) {
-    return ((var & flag) == flag);
+	return ((var & flag) == flag);
 }
 
-template<typename T>
+template <typename T>
 inline T imin(T a, T b) {
-    return (a < b)?a:b;
+	return (a < b) ? a : b;
 }
 
-template<typename T>
+template <typename T>
 inline T imax(T a, T b) {
-    return (a > b)?a:b;
+	return (a > b) ? a : b;
 }
 
-
-template<typename TC>
-const TC* _chooseLiteral(const char* c, const wchar_t* w);
-template<> inline const char* _chooseLiteral<char>(const char* c, const wchar_t* w) { return c; }
-template<> inline const wchar_t* _chooseLiteral<wchar_t>(const char* c, const wchar_t* w) { return w; }
+template <typename TC>
+const TC *_chooseLiteral(const char *c, const wchar_t *w);
+template <>
+inline const char *_chooseLiteral<char>(const char *c, const wchar_t *w) {
+	return c;
+}
+template <>
+inline const wchar_t *_chooseLiteral<wchar_t>(const char *c, const wchar_t *w) {
+	return w;
+}
 
 // with this define you can use a one literal string templated as either char* or wchar_t*
 // tc is a type, char or wchar_t, str is an ansi string literal

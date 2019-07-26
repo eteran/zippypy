@@ -8,35 +8,47 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #pragma once
 
 #include <exception>
-#include <string>
 #include <sstream>
+#include <string>
 
-
-class PyException : public std::exception
-{
+class PyException : public std::exception {
 public:
-    PyException(const std::string& desc) : m_desc(desc)
-    {}
-	
-    virtual const char* what() const noexcept {
-        return m_desc.c_str();
-    }
+	PyException(const std::string &desc)
+		: m_desc(desc) {}
 
-    void addTrack(const std::string& t) {
-        trackback += t + "\n";
-    }
+	virtual const char *what() const noexcept {
+		return m_desc.c_str();
+	}
+
+	void addTrack(const std::string &t) {
+		trackback += t + "\n";
+	}
 
 public:
-    std::string trackback;
+	std::string trackback;
+
 private:
-    std::string m_desc;
+	std::string m_desc;
 };
 
-#define CHECK(pred, msg) do { if (!(pred)) { std::stringstream ss; ss << msg; throw PyException(ss.str()); } } while(false)
+#define CHECK(pred, msg)                 \
+	do {                                 \
+		if (!(pred)) {                   \
+			std::stringstream ss;        \
+			ss << msg;                   \
+			throw PyException(ss.str()); \
+		}                                \
+	} while (false)
 
 #define ASSERT(pred, msg) CHECK(pred, msg)
 
-#define THROW(msg) do { std::stringstream ss; ss << msg; throw PyException(ss.str()); } while(false)
+#define THROW(msg)                   \
+	do {                             \
+		std::stringstream ss;        \
+		ss << msg;                   \
+		throw PyException(ss.str()); \
+	} while (false)

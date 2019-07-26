@@ -8,71 +8,75 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "PyVM.h"
 
+#pragma once
+
+#include "PyVM.h"
+#include "baseObject.h"
+#include "objects.h"
 
 class OpImp {
 public:
-    OpImp(PyVM *_vm) :vm(_vm) {}
+	OpImp(PyVM *_vm)
+		: vm(_vm) {}
 
-    template<typename OT>
-    ObjRef addType(Object *lhs, Object *rhs);
-    ObjRef add(const ObjRef& lhsref, const ObjRef& rhsref);
+	template <typename OT>
+	ObjRef addType(Object *lhs, Object *rhs);
+	ObjRef add(const ObjRef &lhsref, const ObjRef &rhsref);
 
-    template<typename OT>
-    ObjRef multType(Object *lhs, Object *rhs);
-    template<typename TC>
-    ObjRef multStr(Object *str, Object *num);
-    ObjRef mult(const ObjRef& lhsref, const ObjRef& rhsref);
+	template <typename OT>
+	ObjRef multType(Object *lhs, Object *rhs);
+	template <typename TC>
+	ObjRef multStr(Object *str, Object *num);
+	ObjRef mult(const ObjRef &lhsref, const ObjRef &rhsref);
 
-    template<typename OT>
-    ObjRef subType(Object *lhs, Object *rhs);
-    ObjRef sub(const ObjRef& lhsref, const ObjRef& rhsref);
+	template <typename OT>
+	ObjRef subType(Object *lhs, Object *rhs);
+	ObjRef sub(const ObjRef &lhsref, const ObjRef &rhsref);
 
-    template<typename OT>
-    ObjRef divType(Object *lhs, Object *rhs);
-    ObjRef div(const ObjRef& lhsref, const ObjRef& rhsref);
+	template <typename OT>
+	ObjRef divType(Object *lhs, Object *rhs);
+	ObjRef div(const ObjRef &lhsref, const ObjRef &rhsref);
 
-    template<typename OT>
-    ObjRef minusType(Object *arg);
-    ObjRef uminus(const ObjRef& argref);
+	template <typename OT>
+	ObjRef minusType(Object *arg);
+	ObjRef uminus(const ObjRef &argref);
 
-    ObjRef uplus(const ObjRef& argref);
-    ObjRef unot(const ObjRef& argref);
+	ObjRef uplus(const ObjRef &argref);
+	ObjRef unot(const ObjRef &argref);
 
-    template<typename LT>
-    ObjRef makeListFromStack(Frame& frame, int count);
-    void print(const ObjRef& vref, std::ostream& out);
+	template <typename LT>
+	ObjRef makeListFromStack(Frame &frame, int count);
+	void   print(const ObjRef &vref, std::ostream &out);
 
-    ObjRef len(const ObjRef& arg);
+	ObjRef len(const ObjRef &arg);
 
-    ObjRef hash(const ObjRef& arg) {
-        return vm->alloc(new IntObject(hashNum(arg)));
-    }
-    ObjRef str(const ObjRef& arg) {
-        return vm->alloc(new StrObject(stdstr(arg, false)));
-    }
-    ObjRef repr(const ObjRef& arg) {
-        return vm->alloc(new StrObject(stdstr(arg, true)));
-    }
-    ObjRef hex(const ObjRef& n) {
-        int64_t num = checked_cast<IntObject>(n)->v;
-        std::stringstream ss; ss << "0x" << std::hex << num;
-        return vm->alloc(new StrObject(ss.str()));
-    }
-    ObjRef int_(const ObjRef& arg);
-    ObjRef bool_(const ObjRef& arg);
+	ObjRef hash(const ObjRef &arg) {
+		return vm->alloc(new IntObject(hashNum(arg)));
+	}
+	ObjRef str(const ObjRef &arg) {
+		return vm->alloc(new StrObject(stdstr(arg, false)));
+	}
+	ObjRef repr(const ObjRef &arg) {
+		return vm->alloc(new StrObject(stdstr(arg, true)));
+	}
+	ObjRef hex(const ObjRef &n) {
+		int64_t           num = checked_cast<IntObject>(n)->v;
+		std::stringstream ss;
+		ss << "0x" << std::hex << num;
+		return vm->alloc(new StrObject(ss.str()));
+	}
+	ObjRef int_(const ObjRef &arg);
+	ObjRef bool_(const ObjRef &arg);
 
-    bool compare(const ObjRef& lhsref, const ObjRef& rhsref, int op);
-    bool compareList(const ListObject* lhs, const ListObject* rhs, int op);
-    bool operIn(const ObjRef& lhs, const ObjRef& rhs, bool isPositive);
+	bool compare(const ObjRef &lhsref, const ObjRef &rhsref, int op);
+	bool compareList(const ListObject *lhs, const ListObject *rhs, int op);
+	bool operIn(const ObjRef &lhs, const ObjRef &rhs, bool isPositive);
 
-    ObjRef runtime_import(const ObjRef& filenameObj);
+	ObjRef runtime_import(const ObjRef &filenameObj);
 
-    ObjRef apply_slice(const ObjRef& o, int* startp, int* endp);
+	ObjRef apply_slice(const ObjRef &o, int *startp, int *endp);
 
 private:
-    PyVM* vm;
+	PyVM *vm;
 };
-

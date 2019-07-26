@@ -10,6 +10,11 @@
 // limitations under the License.
 #pragma once
 
+#include <string>
+#include <memory>
+#include <functional>
+#include <tuple>
+
 // included from objects.h
 
 

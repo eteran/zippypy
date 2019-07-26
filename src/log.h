@@ -8,35 +8,43 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #pragma once
+
 #include <iostream>
 
 enum LogLevel {
-    LOGLEVEL_DEBUG,
-    LOGLEVEL_ERROR
+	LOGLEVEL_DEBUG,
+	LOGLEVEL_ERROR
 };
 
-
-inline void tostream(std::ostream& os) {
+inline void tostream(std::ostream &os) {
 }
 
-template<typename T, typename... Args>
-inline void tostream(std::ostream& os, const T& v, const Args&... args) {
-    os << v;
-    tostream(os, args...);
+template <typename T, typename... Args>
+inline void tostream(std::ostream &os, const T &v, const Args &... args) {
+	os << v;
+	tostream(os, args...);
 }
 
-template<typename... Args>
-void log(LogLevel lvl, const Args&... args) {
-    std::ostream* ostr;
-    if (lvl == LOGLEVEL_DEBUG)
-        ostr = &std::cout;
-    else
-        ostr = &std::cerr;
+template <typename... Args>
+void log(LogLevel lvl, const Args &... args) {
+	std::ostream *ostr;
+	if (lvl == LOGLEVEL_DEBUG)
+		ostr = &std::cout;
+	else
+		ostr = &std::cerr;
 
-    tostream(*ostr, args...);
-    *ostr << "\n";
+	tostream(*ostr, args...);
+	*ostr << "\n";
 }
 
-#define LOG_DEBUG(...)  do { log(LOGLEVEL_DEBUG, __VA_ARGS__ ); } while (false)
-#define LOG_ERROR(...)  do { log(LOGLEVEL_ERROR, __VA_ARGS__ ); } while (false)
+#define LOG_DEBUG(...)                    \
+	do {                                  \
+		log(LOGLEVEL_DEBUG, __VA_ARGS__); \
+	} while (false)
+
+#define LOG_ERROR(...)                    \
+	do {                                  \
+		log(LOGLEVEL_ERROR, __VA_ARGS__); \
+	} while (false)

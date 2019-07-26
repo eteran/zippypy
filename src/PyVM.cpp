@@ -8,35 +8,33 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "objects.h"
+
+#include "PyCompile.h"
 #include "PyVM.h"
 #include "log.h"
+#include "objects.h"
 #include "utils.h"
-#include "PyCompile.h"
 
-#include <sstream>
 #include <fstream>
-
+#include <sstream>
 
 // int g_maxStackSize;
 
 //map<string, int> g_lookups;
 
-template ObjRef PyVM::makeFromT(const PoolPtr<Object>& v);
+template ObjRef PyVM::makeFromT(const PoolPtr<Object> &v);
 
-
-
-void Frame::argsFromStack(Frame& from, int posCount, int kwCount, CallArgs& args) {
-    for(int i = 0; i < kwCount; ++i) {
-        ObjRef v = from.pop();
-        ObjRef k = from.pop();
-        args.kw[extract<std::string>(k)] = v;
-    }
-    args.pos.reserve(posCount + 1); // avoid push_back allocating - all positional args + possible self
-    for(int i = 0; i < posCount; ++i) {
-        args.pos.push_back(from.pop());
-    }
-    from.pop(); // the callable object
+void Frame::argsFromStack(Frame &from, int posCount, int kwCount, CallArgs &args) {
+	for (int i = 0; i < kwCount; ++i) {
+		ObjRef v                         = from.pop();
+		ObjRef k                         = from.pop();
+		args.kw[extract<std::string>(k)] = v;
+	}
+	args.pos.reserve(posCount + 1); // avoid push_back allocating - all positional args + possible self
+	for (int i = 0; i < posCount; ++i) {
+		args.pos.push_back(from.pop());
+	}
+	from.pop(); // the callable object
 }
 
 /*
@@ -47,127 +45,122 @@ static void testNoneAndSet(NameDict& dest, const std::string& name, const ObjRef
 }
 */
 
-static void testNoneAndSet(Frame::TFastLocalsList& dest, int index, const ObjRef& v) {
-    CHECK(index < dest.size() && dest[index].isNull(), "Argument already threre " << index);
-    dest[index] = v;
+static void testNoneAndSet(Frame::TFastLocalsList &dest, int index, const ObjRef &v) {
+	CHECK(index < dest.size() && dest[index].isNull(), "Argument already threre " << index);
+	dest[index] = v;
 }
 
-void Frame::localsFromStack(Frame& from, ObjRef self, int posCount, int kwCount) 
-{
-    const CodeDefinition& c = code()->m_co;
-    int selfCount = self.isNull()?0:1;
+void Frame::localsFromStack(Frame &from, ObjRef self, int posCount, int kwCount) {
+	const CodeDefinition &c         = code()->m_co;
+	int                   selfCount = self.isNull() ? 0 : 1;
 
-    auto& dest = m_fastlocals; // size initialized with co_nlocals which includes the arguments and the *argv
-    TupleObjRef starArgs;
+	auto &      dest = m_fastlocals; // size initialized with co_nlocals which includes the arguments and the *argv
+	TupleObjRef starArgs;
 
-    CHECK(checkFlag(c.co_flags, (uint)MCO_NEWLOCALS), "co_flags doesn't have CO_NEWLOCALS"); // using fast locals
-    CHECK(!checkFlag(c.co_flags, (uint)MCO_VARKEYWORDS), "CO_VARKEYWORDS not supported");
-    if (!checkFlag(c.co_flags, (uint)MCO_VARARGS)) {
-        CHECK(posCount + kwCount + selfCount == c.co_argcount, "unexpected number of arguments " << posCount + kwCount + selfCount << "!=" << c.co_argcount);
-    }
-    else {
-        starArgs = m_vm->alloct(new TupleObject);
-        testNoneAndSet(dest, c.co_argcount, static_pcast<Object>(starArgs));
-    }
-    // go over the args in the stack, match to locals
-    for(int i = 0; i < kwCount; ++i) { // arguments passed by key-value
-        ObjRef val = from.pop();
-        std::string aname = checked_cast<StrObject>(from.pop())->v;
-        int ci = 0;
-        for(; ci < (int)c.co_argcount; ++ci) {
-            const std::string& cname = c.co_varnames[ci];
-            if (cname == aname) {
-                //testNoneAndSet(dest, cname, val);
-                testNoneAndSet(dest, ci, val);
-                break;
-            }
-        }
-        CHECK(ci < (int)c.co_argcount, "Unknown key argument name " << aname);
-    }
-    for(int i = 0; i < posCount; ++i) { // arguments passed by position
-        int posi = selfCount + posCount - i - 1;
-        ObjRef a = from.pop();
-        //testNoneAndSet(dest, c.co_varnames(posi), from.pop());
-        if (posi < (int)c.co_argcount)
-            testNoneAndSet(dest, posi, a);
-        else
-            starArgs->prepend(a); // arguments received by *args
-    }
-    if (selfCount) {
-        //testNoneAndSet(dest, c.co_varnames(0), self);
-        testNoneAndSet(dest, 0, self);
-    }
-    // check that all args were assigned: (redundant)
-//     for(int i = 0; i < (int)c.co_argcount; ++i) {
-//         CHECK(dest.find(c.co_varnames(i)) != dest.end(), "argument did not get a value " << c.co_varnames(i));
-//     }
-    from.pop(); // the callable object
+	CHECK(checkFlag(c.co_flags, (uint)MCO_NEWLOCALS), "co_flags doesn't have CO_NEWLOCALS"); // using fast locals
+	CHECK(!checkFlag(c.co_flags, (uint)MCO_VARKEYWORDS), "CO_VARKEYWORDS not supported");
+	if (!checkFlag(c.co_flags, (uint)MCO_VARARGS)) {
+		CHECK(posCount + kwCount + selfCount == c.co_argcount, "unexpected number of arguments " << posCount + kwCount + selfCount << "!=" << c.co_argcount);
+	} else {
+		starArgs = m_vm->alloct(new TupleObject);
+		testNoneAndSet(dest, c.co_argcount, static_pcast<Object>(starArgs));
+	}
+	// go over the args in the stack, match to locals
+	for (int i = 0; i < kwCount; ++i) { // arguments passed by key-value
+		ObjRef      val   = from.pop();
+		std::string aname = checked_cast<StrObject>(from.pop())->v;
+		int         ci    = 0;
+		for (; ci < (int)c.co_argcount; ++ci) {
+			const std::string &cname = c.co_varnames[ci];
+			if (cname == aname) {
+				//testNoneAndSet(dest, cname, val);
+				testNoneAndSet(dest, ci, val);
+				break;
+			}
+		}
+		CHECK(ci < (int)c.co_argcount, "Unknown key argument name " << aname);
+	}
+	for (int i = 0; i < posCount; ++i) { // arguments passed by position
+		int    posi = selfCount + posCount - i - 1;
+		ObjRef a    = from.pop();
+		//testNoneAndSet(dest, c.co_varnames(posi), from.pop());
+		if (posi < (int)c.co_argcount)
+			testNoneAndSet(dest, posi, a);
+		else
+			starArgs->prepend(a); // arguments received by *args
+	}
+	if (selfCount) {
+		//testNoneAndSet(dest, c.co_varnames(0), self);
+		testNoneAndSet(dest, 0, self);
+	}
+	// check that all args were assigned: (redundant)
+	//     for(int i = 0; i < (int)c.co_argcount; ++i) {
+	//         CHECK(dest.find(c.co_varnames(i)) != dest.end(), "argument did not get a value " << c.co_varnames(i));
+	//     }
+	from.pop(); // the callable object
 }
 
-NameDict& Frame::globals() { 
-    return m_module->m_globals; 
+NameDict &Frame::globals() {
+	return m_module->m_globals;
 }
 
-ObjRef Frame::lookupGlobal(const std::string& name) {
-    ObjRef ret = tryLookup(globals(), name);
-    if (!ret.isNull())
-        return ret;
-    return m_vm->m_builtins->get(name);
+ObjRef Frame::lookupGlobal(const std::string &name) {
+	ObjRef ret = tryLookup(globals(), name);
+	if (!ret.isNull())
+		return ret;
+	return m_vm->m_builtins->get(name);
 }
 
 ObjRef Frame::run() {
-    EObjSlot retslot = SLOT_RETVAL;
-    ObjRef retval;
-    SetObjCallback setObj = [&](EObjSlot slot, const ObjRef& v) {
-        retslot = slot; 
-        retval = v;
-    };
+	EObjSlot       retslot = SLOT_RETVAL;
+	ObjRef         retval;
+	SetObjCallback setObj = [&](EObjSlot slot, const ObjRef &v) {
+		retslot = slot;
+		retval  = v;
+	};
 
-    do {
-        doOpcode(setObj);
-    } while (retval.isNull());
+	do {
+		doOpcode(setObj);
+	} while (retval.isNull());
 
-    m_vm->m_lastFramei = m_lasti;
-    m_retslot = retslot; 
-    return retval;
+	m_vm->m_lastFramei = m_lasti;
+	m_retslot          = retslot;
+	return retval;
 }
 
 void Frame::clear() {
-    m_code.reset();
-    m_module.reset();
-    m_stack.clear(); // vector clear
-    m_fastlocals.clear(); // container clear
+	m_code.reset();
+	m_module.reset();
+	m_stack.clear();      // vector clear
+	m_fastlocals.clear(); // container clear
 }
 
-void Frame::setCode(const CodeObjRef& code) {
-    m_code = code;
-    m_fastlocals.resize(m_code->m_co.co_nlocals);
+void Frame::setCode(const CodeObjRef &code) {
+	m_code = code;
+	m_fastlocals.resize(m_code->m_co.co_nlocals);
 }
 
-
-ObjRef FuncObject::call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self) {
-    frame.setCode(m_code);
-    frame.localsFromStack(from, self, posCount, kwCount);
-    return frame.run();
+ObjRef FuncObject::call(Frame &from, Frame &frame, int posCount, int kwCount, const ObjRef &self) {
+	frame.setCode(m_code);
+	frame.localsFromStack(from, self, posCount, kwCount);
+	return frame.run();
 }
 
-
-ObjRef CFuncObject::call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self) {
-    CallArgs args;
-    frame.argsFromStack(from, posCount, kwCount, args);
-    if (!self.isNull())
-        args.pos.push_back(self);
-    int fcount = wrap->argsCount();
-    if (fcount != -1) // means variable number of arguments, see cfunc.h
-        CHECK(args.pos.size() == fcount && args.kw.size() == 0, "Wrong number of arguments " << args.pos.size() << "!=" << fcount);
-    ObjRef ret = wrap->call(args);
-    return ret;
+ObjRef CFuncObject::call(Frame &from, Frame &frame, int posCount, int kwCount, const ObjRef &self) {
+	CallArgs args;
+	frame.argsFromStack(from, posCount, kwCount, args);
+	if (!self.isNull())
+		args.pos.push_back(self);
+	int fcount = wrap->argsCount();
+	if (fcount != -1) // means variable number of arguments, see cfunc.h
+		CHECK(args.pos.size() == fcount && args.kw.size() == 0, "Wrong number of arguments " << args.pos.size() << "!=" << fcount);
+	ObjRef ret = wrap->call(args);
+	return ret;
 }
 
-
-ObjRef MethodObject::call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& inself) {
-    // calling unbounded method is possible with the first argument as self. unlike CPython, the first argument is not checked to be of the right class
-    return m_func->call(from, frame, posCount, kwCount, ObjRef(m_self));
+ObjRef MethodObject::call(Frame &from, Frame &frame, int posCount, int kwCount, const ObjRef &inself) {
+	// calling unbounded method is possible with the first argument as self. unlike CPython, the first argument is not checked to be of the right class
+	return m_func->call(from, frame, posCount, kwCount, ObjRef(m_self));
 }
 
 /*
@@ -185,91 +178,83 @@ void ClassObject::makeMethods(const InstanceObjRef& i) {
 }
 */
 
-ObjRef ClassObject::call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self) 
-{
-    InstanceObjRef i(frame.m_vm->alloct(new InstanceObject(ClassObjRef(this))));
-    // set up methods with self
-    //makeMethods(i);
-    ObjRef inito = i->simple_attr("__init__");
-    if (!inito.isNull()) {
-        MethodObjRef init = checked_cast<MethodObject>(inito);
-        ObjRef ret = init->call(from, frame, posCount, kwCount, ObjRef());
-        CHECK(ret.isNull() || ret->type == Object::NONE, "__init__() must return None"); 
-    } // we can either call __init__() or the cpp ctor, not both since the arguments are removed from the stack
-    else if (!m_cwrap.isNull() && !m_cwrap->m_ctor.isNull()) {
-        CallArgs args;
-        frame.argsFromStack(from, posCount, kwCount, args);
-        i->m_cwrap = m_cwrap->m_ctor->construct(m_vm, args);
-    }
+ObjRef ClassObject::call(Frame &from, Frame &frame, int posCount, int kwCount, const ObjRef &self) {
+	InstanceObjRef i(frame.m_vm->alloct(new InstanceObject(ClassObjRef(this))));
+	// set up methods with self
+	//makeMethods(i);
+	ObjRef inito = i->simple_attr("__init__");
+	if (!inito.isNull()) {
+		MethodObjRef init = checked_cast<MethodObject>(inito);
+		ObjRef       ret  = init->call(from, frame, posCount, kwCount, ObjRef());
+		CHECK(ret.isNull() || ret->type == Object::NONE, "__init__() must return None");
+	} // we can either call __init__() or the cpp ctor, not both since the arguments are removed from the stack
+	else if (!m_cwrap.isNull() && !m_cwrap->m_ctor.isNull()) {
+		CallArgs args;
+		frame.argsFromStack(from, posCount, kwCount, args);
+		i->m_cwrap = m_cwrap->m_ctor->construct(m_vm, args);
+	}
 
-    return ObjRef(i);
+	return ObjRef(i);
 }
 
 //--------------------------------------- VM ------------------------------------------------------
 
-PyVM::PyVM() 
-    : m_out(new LoggerPrinter(LOGLEVEL_DEBUG))
-    , m_currentFrame(nullptr), m_lastFramei(-1)
-    , m_noneObject(alloc(new Object)), m_trueObject(alloc(new BoolObject(true))), m_falseObject(alloc(new BoolObject(false)))
-{
-    m_defaultModule = alloct(new ModuleObject("__main__", this));
-    m_builtins = alloct(new Builtins(this));
+PyVM::PyVM()
+	: m_out(new LoggerPrinter(LOGLEVEL_DEBUG)), m_currentFrame(nullptr), m_lastFramei(-1), m_noneObject(alloc(new Object)), m_trueObject(alloc(new BoolObject(true))), m_falseObject(alloc(new BoolObject(false))) {
+	m_defaultModule = alloct(new ModuleObject("__main__", this));
+	m_builtins      = alloct(new Builtins(this));
 }
 
 PyVM::~PyVM() {
-   // m_defaultModule
-    clear();
+	// m_defaultModule
+	clear();
 }
 
 std::string PyVM::instructionPointer() {
-    std::ostringstream os;
-    os << "(" << m_lastFramei << ") ";
-    Frame* f = m_currentFrame;
-    while (f != nullptr) {
-        os << f->m_lasti << " < ";
-        f = f->m_lastFrame;
-    }
-    return os.str();
+	std::ostringstream os;
+	os << "(" << m_lastFramei << ") ";
+	Frame *f = m_currentFrame;
+	while (f != nullptr) {
+		os << f->m_lasti << " < ";
+		f = f->m_lastFrame;
+	}
+	return os.str();
 }
 
 // where all functions go to and out of
-ObjRef PyVM::callFunction(Frame& from, int posCount, int kwCount) {
-    ObjRef func = from.m_stack.peek(posCount + kwCount*2);
+ObjRef PyVM::callFunction(Frame &from, int posCount, int kwCount) {
+	ObjRef func = from.m_stack.peek(posCount + kwCount * 2);
 
-    func->checkProp(Object::ICALLABLE);
-    CallableObjRef funcref = static_pcast<CallableObject>(func);
+	func->checkProp(Object::ICALLABLE);
+	CallableObjRef funcref = static_pcast<CallableObject>(func);
 
-    NameDict locals;
-    Frame frame(this, funcref->m_module, &locals); // module needed for globals
-    try {
-        return funcref->call(from, frame, posCount, kwCount, ObjRef());
-    }
-    catch(PyException& e) {
-        std::ostringstream s;
-        s << "in " << funcref->funcname() << " ";
-        if (!frame.code().isNull())
-            s << frame.code()->lineFromIndex(frame.m_lasti) << " ";
-        s << "[" << frame.m_lasti << "]";
-        e.addTrack(s.str());
-        throw;
-    }
-
+	NameDict locals;
+	Frame    frame(this, funcref->m_module, &locals); // module needed for globals
+	try {
+		return funcref->call(from, frame, posCount, kwCount, ObjRef());
+	} catch (PyException &e) {
+		std::ostringstream s;
+		s << "in " << funcref->funcname() << " ";
+		if (!frame.code().isNull())
+			s << frame.code()->lineFromIndex(frame.m_lasti) << " ";
+		s << "[" << frame.m_lasti << "]";
+		e.addTrack(s.str());
+		throw;
+	}
 }
 
-
-
-ObjRef PyVM::eval(const CodeObjRef& code, ModuleObjRef module) {
-    validateCode(code);
-    Frame frame(this, module, &module->m_globals); // in the module top level execution locals()==globals()
-    frame.setCode(code);
-    return frame.run();
+ObjRef PyVM::eval(const CodeObjRef &code, ModuleObjRef module) {
+	validateCode(code);
+	Frame frame(this, module, &module->m_globals); // in the module top level execution locals()==globals()
+	frame.setCode(code);
+	return frame.run();
 }
 
-ModuleObjRef PyVM::addEmptyModule(const std::string& name) {
-    ModuleObjRef module(alloct(new ModuleObject(name, this)));
-    module->m_globals["__name__"] = alloc(new StrObject(name));
-    m_modules[name] = module;
-    return module;
+ModuleObjRef PyVM::addEmptyModule(const std::string &name) {
+	ModuleObjRef module(alloct(new ModuleObject(name, this)));
+	module->m_globals["__name__"] = alloc(new StrObject(name));
+	m_modules[name]               = module;
+	return module;
 }
 
 /*
@@ -282,144 +267,137 @@ ModuleObjRef PyVM::importModule(const CodeDefinition& moduleDef, const std::stri
 }
 */
 
-ModuleObjRef PyVM::importPycStream(std::istream& is, const std::string& path, bool hasHeader)
-{
-    ObjRef obj = CodeDefinition::parsePyc(is, this, hasHeader);
-    auto code = checked_cast<CodeObject>(obj);
-    std::string modName;
-    if (!code->m_co.co_filename.empty())
-        modName = extractFileNameWithoutExtension(code->m_co.co_filename); 
-    else if (!code->m_co.co_name.empty() && code->m_co.co_name != "<module>")
-        modName = code->m_co.co_name;
-    else {
-        CHECK(!path.empty(), "Missing module name");
-        modName = extractFileNameWithoutExtension(path);
-    }
-    auto module = addEmptyModule(modName);
-    eval(code, module);
-    return module;
+ModuleObjRef PyVM::importPycStream(std::istream &is, const std::string &path, bool hasHeader) {
+	ObjRef      obj  = CodeDefinition::parsePyc(is, this, hasHeader);
+	auto        code = checked_cast<CodeObject>(obj);
+	std::string modName;
+	if (!code->m_co.co_filename.empty())
+		modName = extractFileNameWithoutExtension(code->m_co.co_filename);
+	else if (!code->m_co.co_name.empty() && code->m_co.co_name != "<module>")
+		modName = code->m_co.co_name;
+	else {
+		CHECK(!path.empty(), "Missing module name");
+		modName = extractFileNameWithoutExtension(path);
+	}
+	auto module = addEmptyModule(modName);
+	eval(code, module);
+	return module;
 }
 
-ModuleObjRef PyVM::importPycFile(const std::string& pycpath) 
-{
-    std::ifstream ifs(pycpath, std::ios::binary);
-    if (!ifs.good())
-        return ModuleObjRef();
-    return importPycStream(ifs, pycpath, true);
+ModuleObjRef PyVM::importPycFile(const std::string &pycpath) {
+	std::ifstream ifs(pycpath, std::ios::binary);
+	if (!ifs.good())
+		return ModuleObjRef();
+	return importPycStream(ifs, pycpath, true);
 }
 
-ModuleObjRef PyVM::importPycBuf(const std::string& pyctext, bool hasHeader)
-{
-    std::istringstream iss(pyctext);
-    return importPycStream(iss, std::string(), hasHeader);
+ModuleObjRef PyVM::importPycBuf(const std::string &pyctext, bool hasHeader) {
+	std::istringstream iss(pyctext);
+	return importPycStream(iss, std::string(), hasHeader);
 }
 
-
-ModuleObjRef PyVM::getModule(const std::string& name) {
-    ModuleObjRef mod = tryLookup(m_modules, name);
-    if (!mod.isNull())
-        return mod;
-    if (m_importCallback) {
-        auto impret = m_importCallback(name);
-        if (impret.first.get() != nullptr)
-            return importPycStream(*impret.first.get(), name, impret.second);
-    }
-    THROW("Did not find module " << name);
+ModuleObjRef PyVM::getModule(const std::string &name) {
+	ModuleObjRef mod = tryLookup(m_modules, name);
+	if (!mod.isNull())
+		return mod;
+	if (m_importCallback) {
+		auto impret = m_importCallback(name);
+		if (impret.first.get() != nullptr)
+			return importPycStream(*impret.first.get(), name, impret.second);
+	}
+	THROW("Did not find module " << name);
 }
 
 std::vector<std::string> split(const std::string &s, char delim) {
-    std::vector<std::string> elems;
-    std::stringstream ss(s);
-    std::string item;
-    while (std::getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-    return elems;
+	std::vector<std::string> elems;
+	std::stringstream        ss(s);
+	std::string              item;
+	while (std::getline(ss, item, delim)) {
+		elems.push_back(item);
+	}
+	return elems;
 }
 
 // restrictions of names:
 // - code can't import one module to another
 // - can't call one class from another
-ObjRef PyVM::lookupQual(const std::string& name, ModuleObjRef* mod) 
-{
-    ModuleObjRef module = m_defaultModule; 
-    std::string funcname = name;
-    if (funcname.find('.') != std::string::npos) {
-        std::vector<std::string> names = split(funcname, '.');
-        CHECK(names.size() == 2, "Only one module nesting allowed: " << name);
-        module = getModule(names[0]);
-        funcname = names[1];
-    }
-    ObjRef func = module->attr(funcname);
-    if (!func.isNull()) {
-        if (mod)
-            *mod = module;
-        return func;
-    }
-    func = m_builtins->attr(funcname);
-    if (!func.isNull()) {
-        if (mod)
-            *mod = static_pcast<ModuleObject>(m_builtins);
-        return func;
-    }
-    THROW("Did not find function " << name);
+ObjRef PyVM::lookupQual(const std::string &name, ModuleObjRef *mod) {
+	ModuleObjRef module   = m_defaultModule;
+	std::string  funcname = name;
+	if (funcname.find('.') != std::string::npos) {
+		std::vector<std::string> names = split(funcname, '.');
+		CHECK(names.size() == 2, "Only one module nesting allowed: " << name);
+		module   = getModule(names[0]);
+		funcname = names[1];
+	}
+	ObjRef func = module->attr(funcname);
+	if (!func.isNull()) {
+		if (mod)
+			*mod = module;
+		return func;
+	}
+	func = m_builtins->attr(funcname);
+	if (!func.isNull()) {
+		if (mod)
+			*mod = static_pcast<ModuleObject>(m_builtins);
+		return func;
+	}
+	THROW("Did not find function " << name);
 }
 
 // from cpp code
-ObjRef PyVM::callv(const std::string& funcname, const std::vector<ObjRef>& posargs) {
-    //ModuleObjRef module;
-    ObjRef func = lookupQual(funcname, nullptr); // parse module.funcname and get the object
-    return callv(func, posargs);
+ObjRef PyVM::callv(const std::string &funcname, const std::vector<ObjRef> &posargs) {
+	//ModuleObjRef module;
+	ObjRef func = lookupQual(funcname, nullptr); // parse module.funcname and get the object
+	return callv(func, posargs);
 }
 
 // from cpp code
-ObjRef PyVM::callv(const ObjRef& ofunc, const std::vector<ObjRef>& posargs) {
-    ofunc->checkProp(Object::ICALLABLE);
-    CallableObjRef func = static_pcast<CallableObject>(ofunc);
-    Frame dummyFrame(this, func->m_module, nullptr);
-    dummyFrame.push(ofunc);
-    for(auto it = posargs.begin(); it != posargs.end(); ++it)
-        dummyFrame.push(*it);
-    return callFunction(dummyFrame, (int)posargs.size(), 0);
+ObjRef PyVM::callv(const ObjRef &ofunc, const std::vector<ObjRef> &posargs) {
+	ofunc->checkProp(Object::ICALLABLE);
+	CallableObjRef func = static_pcast<CallableObject>(ofunc);
+	Frame          dummyFrame(this, func->m_module, nullptr);
+	dummyFrame.push(ofunc);
+	for (auto it = posargs.begin(); it != posargs.end(); ++it)
+		dummyFrame.push(*it);
+	return callFunction(dummyFrame, (int)posargs.size(), 0);
 }
 
-void PyVM::addGlobalFunc(const CodeDefinition& cdef) {
-    m_defaultModule->addGlobal(alloc(new FuncObject(alloct(new CodeObject(cdef)), m_defaultModule)), cdef.co_name);
+void PyVM::addGlobalFunc(const CodeDefinition &cdef) {
+	m_defaultModule->addGlobal(alloc(new FuncObject(alloct(new CodeObject(cdef)), m_defaultModule)), cdef.co_name);
 }
 
-void PyVM::memDump(std::ostream& os) {
-    os << "Memory Dump: " << m_alloc.size() << " objects\n";
-    m_alloc.foreach([&](const ObjRef& o)->bool {
-        os << "(" << o.use_count() << ") " << o->typeName() << ": " << stdstr(o, true) << "\n";
-        return true;
-    });
+void PyVM::memDump(std::ostream &os) {
+	os << "Memory Dump: " << m_alloc.size() << " objects\n";
+	m_alloc.foreach ([&](const ObjRef &o) -> bool {
+		os << "(" << o.use_count() << ") " << o->typeName() << ": " << stdstr(o, true) << "\n";
+		return true;
+	});
 }
 
 void PyVM::clear() {
-    LOG_DEBUG("PyVM clear with ", m_alloc.size(), " objects");
-    m_modules.clear();
-    m_alloc.gradForeach([&](const ObjRef& o) {
-        o->clear();
-    });
-
+	LOG_DEBUG("PyVM clear with ", m_alloc.size(), " objects");
+	m_modules.clear();
+	m_alloc.gradForeach([&](const ObjRef &o) {
+		o->clear();
+	});
 }
 
-void PyVM::addBuiltin(const ClassObjRef& v) {
-    addBuiltin(v->funcname(), ObjRef(v) );
+void PyVM::addBuiltin(const ClassObjRef &v) {
+	addBuiltin(v->funcname(), ObjRef(v));
 }
 
 #if USE_CPYTHON
 
-void PyVM::runInteractive() 
-{
-    while (true) {
-        string pycline = getInteractiveLine();           
-        if (pycline.empty())
-            break;
-        istringstream iss(pycline);
-        ObjRef c = CodeDefinition::parsePyc(iss, this, false);
-        eval(dynamic_pcast<CodeObject>(c), mainModule());
-    }
+void PyVM::runInteractive() {
+	while (true) {
+		string pycline = getInteractiveLine();
+		if (pycline.empty())
+			break;
+		istringstream iss(pycline);
+		ObjRef        c = CodeDefinition::parsePyc(iss, this, false);
+		eval(dynamic_pcast<CodeObject>(c), mainModule());
+	}
 }
 
 #endif
