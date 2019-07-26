@@ -20,7 +20,7 @@ public:
 	PyException(const std::string &desc)
 		: m_desc(desc) {}
 
-	virtual const char *what() const noexcept {
+	const char *what() const noexcept override {
 		return m_desc.c_str();
 	}
 

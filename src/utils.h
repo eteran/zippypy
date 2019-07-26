@@ -18,9 +18,7 @@
 bool         wstrFromUtf8(const std::string &s, std::wstring *out);
 std::wstring wstrFromAnsi(const std::string &s);
 std::string  ansiFromwstr(const std::wstring &s);
-
 std::string utf8FromWstr(const std::wstring &s);
-
 std::string extractFileNameWithoutExtension(const std::string &s);
 
 uint64_t msecTime();
@@ -32,17 +30,17 @@ void     MessageBoxCall();
 #define CONSOLE_GRAY 8
 void consoleSetColor(int col);
 
-template <typename TC>
-std::basic_string<TC> toLower(const std::basic_string<TC> &s) {
-	std::basic_string<TC> c(s);
-	std::transform(c.begin(), c.end(), c.begin(), [](TC c) {
+template <typename Ch>
+std::basic_string<Ch> toLower(const std::basic_string<Ch> &s) {
+	std::basic_string<Ch> c(s);
+	std::transform(c.begin(), c.end(), c.begin(), [](Ch c) {
 		return std::tolower(c);
 	});
 	return c;
 }
 
-template <typename TC, typename F>
-void trim(std::basic_string<TC> &str, const F &pred) {
+template <typename Ch, typename F>
+void trim(std::basic_string<Ch> &str, const F &pred) {
 	size_t first = 0;
 	size_t len   = str.length();
 	if (len == 0)
@@ -50,24 +48,24 @@ void trim(std::basic_string<TC> &str, const F &pred) {
 	while (first < len && pred(str[first]))
 		++first;
 	if (first == len) {
-		str = std::basic_string<TC>();
+		str = std::basic_string<Ch>();
 		return;
 	}
-	int last = (int)len - 1;
+	auto last = (int)len - 1;
 	while (last >= 0 && pred(str[last]))
 		--last;
 	if (first != 0 || last != str.length() - 1)
 		str = str.substr(first, last - first + 1);
 }
 
-template <typename TC>
-void trimSpaces(std::basic_string<TC> &str) {
-	trim(str, [](TC c) -> bool { return c == ' ' || c == '\t' || c == '\n'; });
+template <typename Ch>
+void trimSpaces(std::basic_string<Ch> &str) {
+	trim(str, [](Ch c) -> bool { return c == ' ' || c == '\t' || c == '\n'; });
 }
 
-template <typename TC>
-void strip(std::basic_string<TC> &str, const std::basic_string<TC> &remove) {
-	trim(str, [&](TC c) -> bool {
-		return remove.find(c) != std::basic_string<TC>::npos;
+template <typename Ch>
+void strip(std::basic_string<Ch> &str, const std::basic_string<Ch> &remove) {
+	trim(str, [&](Ch c) -> bool {
+		return remove.find(c) != std::basic_string<Ch>::npos;
 	});
 }

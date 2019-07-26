@@ -18,16 +18,18 @@
 // included from objects.h
 
 
-template<int Acount, typename TL>
+template <int Acount, typename TL>
 struct CWrap : public ICWrap {
+
     CWrap(TL f) : m_f(f) {}
-    virtual ObjRef call(CallArgs& args) {
+
+	ObjRef call(CallArgs& args) override {
         return m_f(args);
     }
 
-    virtual int argsCount() { return Acount; }
-    virtual const std::string& name() { return m_name; }
-    virtual void setName(const std::string& name) {
+	int argsCount() override { return Acount; }
+	const std::string& name() override { return m_name; }
+	void setName(const std::string& name) override {
         m_name = name;
     }
 
@@ -53,10 +55,12 @@ class PyVM;
 // these definitions purpose is to generate seq<0,1,2,3,4>, given gens<5>
 template<int ...> struct seq 
 {};
+
 template<int N, int ...S> struct gens : gens < N - 1, N - 1, S... > 
 {};
+
 template<int ...S> struct gens < 0, S... > 
-{ typedef seq<S...> type; };
+{ using type = seq<S...>; };
 
 template <typename R, typename ...Args>
 struct save_func_for_later 

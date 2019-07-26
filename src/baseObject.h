@@ -15,7 +15,7 @@
 #include "except.h"
 
 struct Object;
-typedef PoolPtr<Object> ObjRef;
+using ObjRef = PoolPtr<Object>;
 class Frame;
 class PyVM;
 
@@ -72,6 +72,7 @@ public:
 		SLICE             = 22,
 		XRANGE            = 23
 	};
+
 	enum TypeProp {
 		IATTRABLE = 1, // see tryAs<IAttrable>
 		ICALLABLE = 2
@@ -87,6 +88,7 @@ public:
 		g_pyvmObjectCount--;
 #endif
 	}
+
 	// clear all internal references of an object, to cleanup any reference cycle
 	// must only call 'reset()' of held ObjRefs. never recursively call other objects clear() since that could cause infinite recursion
 	Object(Type _type = NONE)
@@ -95,6 +97,7 @@ public:
 		g_pyvmObjectCount++;
 #endif
 	}
+
 	Object(Type _type, uint _typeProp)
 		: type(_type), typeProp(_typeProp) {
 #ifdef PYVM_COUNT_OBJECTS
@@ -104,16 +107,27 @@ public:
 
 	virtual void clear() {}
 
-	virtual ObjRef attr(const std::string &name) {
+	ObjRef attr(const std::string &name) override {
+		(void)name;
 		THROW("Unimplemented Object::attr");
 	}
-	virtual void setattr(const std::string &name, const ObjRef &o) {
+
+	void setattr(const std::string &name, const ObjRef &o) override {
+		(void)name;
+		(void)o;
 		THROW("Unimplemented Object::setattr");
 	}
-	virtual ObjRef call(Frame &from, Frame &frame, int posCount, int kwCount, const ObjRef &self) {
+
+	ObjRef call(Frame &from, Frame &frame, int posCount, int kwCount, const ObjRef &self) override {
+		(void)from;
+		(void)frame;
+		(void)posCount;
+		(void)kwCount;
+		(void)self;
 		THROW("Unimplemented Object::call");
 	}
-	virtual std::string funcname() const {
+
+	std::string funcname() const override {
 		THROW("Unimplemented Object::funcname");
 	}
 
@@ -121,12 +135,14 @@ public:
 	template <typename T>
 	static Object::Type typeValue();
 
-	inline void checkType(Object::Type t) {
+	void checkType(Object::Type t) {
 		CHECK(type == t, "wrong type expected:" << typeName(t) << " got:" << typeName());
 	}
-	inline void checkProp(Object::TypeProp p) {
+
+	void checkProp(Object::TypeProp p) {
 		CHECK(checkFlag(typeProp, (int)p) == true, "wrong prop expected:" << typeProp << " got:" << p);
 	}
+
 	template <typename T> // T is a primitive type like int or string
 	inline void checkTypeT();
 
@@ -134,6 +150,7 @@ public:
 		return typeName(type);
 	}
 	static const char *typeName(Type t);
+
 	template <typename T>
 	static const char *typeName() {
 		return typeName(Object::typeValue<T>());
@@ -154,7 +171,7 @@ public:
 	}
 
 private:
-	DISALLOW_COPY_AND_ASSIGN(Object);
+	DISALLOW_COPY_AND_ASSIGN(Object)
 };
 
 template <>
@@ -164,6 +181,7 @@ inline IAttrable *Object::tryAs<IAttrable>() {
 	}
 	return nullptr;
 }
+
 template <>
 inline ICallable *Object::tryAs<ICallable>() {
 	if (checkFlag(typeProp, (int)ICALLABLE)) {

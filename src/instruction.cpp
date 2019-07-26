@@ -557,7 +557,7 @@ ObjRef OpImp::unot(const ObjRef &argref) {
 
 static int64_t intLen(const ObjRef &argref) {
 	Object *arg = argref.get();
-	int64_t l   = 0;
+
 	switch (arg->type) {
 	case Object::LIST:
 		return lenType<ListObject>(arg);
@@ -669,10 +669,10 @@ ObjRef OpImp::apply_slice(const ObjRef &o, int *startp, int *endp) {
 		end = (int)s.length();
 
 	if (start < 0)
-		start = imax(0, (int)s.length() + start);
+		start = std::max(0, (int)s.length() + start);
 	if (end < 0)
 		end = (int)s.length() + end;
-	int         len = imin((int)s.length(), end - start);
+	int         len = std::min((int)s.length(), end - start);
 	std::string res;
 	if (len > 0)
 		res = s.substr(start, len);
@@ -691,13 +691,13 @@ int64_t hashNum(const Object *arg) {
 	}
 	switch (arg->type) {
 	case Object::BOOL:
-		return ((BoolObject *)arg)->v ? 1 : 0;
+		return ((const BoolObject *)arg)->v ? 1 : 0;
 	case Object::INT: {
 		int64_t n = ((IntObject *)arg)->v;
 		return notMinusOne(n);
 	}
 	case Object::FLOAT: {
-		double f  = ((FloatObject *)arg)->v;
+		double f  = ((const FloatObject *)arg)->v;
 		double ip = 0.0;
 		if (modf(f, &ip) == 0.0)
 			return notMinusOne((int64_t)f);
@@ -706,7 +706,7 @@ int64_t hashNum(const Object *arg) {
 	}
 	case Object::USTR:
 	case Object::STR: { // same as CPython
-		const StrBaseObject *s = (StrBaseObject *)arg;
+		const StrBaseObject *s = (const StrBaseObject *)arg;
 		if (s->size() == 0)
 			return 0;
 		int h = s->at(0) << 7;
@@ -1244,7 +1244,7 @@ ObjRef xrange(CallArgs &args, PyVM *vm) {
 class PyLogger {
 public:
 	PyLogger() {}
-	virtual ~PyLogger() {}
+	~PyLogger() {}
 
 	void debug(const std::vector<ObjRef> &args) {
 		plog(LOGLEVEL_DEBUG, args);

@@ -28,6 +28,7 @@ bool wstrFromUtf8(const std::string &s, std::wstring *out) {
 	sz = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s.c_str(), (int)s.size(), (LPWSTR)out->data(), sz);
 	return sz != 0;
 }
+
 std::string utf8FromWstr(const std::wstring &s) {
 	if (s.empty()) {
 		return string();
@@ -58,6 +59,7 @@ std::wstring wstrFromAnsi(const std::string &s) {
 	std::copy(s.begin(), s.end(), out.begin());
 	return out;
 }
+
 std::string ansiFromwstr(const std::wstring &s) {
 	std::string out;
 	out.reserve(s.size());

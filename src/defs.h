@@ -16,31 +16,23 @@ private:                              \
 	Cls(const Cls &) = delete;        \
 	Cls &operator=(const Cls &) = delete;
 
-typedef unsigned short ushort;
-typedef unsigned char  uchar;
-typedef unsigned int   uint;
+using ushort = unsigned short;
+using uchar = unsigned char ;
+using uint = unsigned int  ;
 
 template <typename T>
 inline bool checkFlag(T var, T flag) {
 	return ((var & flag) == flag);
 }
 
-template <typename T>
-inline T imin(T a, T b) {
-	return (a < b) ? a : b;
-}
+template <typename Ch>
+const Ch *_chooseLiteral(const char *c, const wchar_t *w);
 
-template <typename T>
-inline T imax(T a, T b) {
-	return (a > b) ? a : b;
-}
-
-template <typename TC>
-const TC *_chooseLiteral(const char *c, const wchar_t *w);
 template <>
 inline const char *_chooseLiteral<char>(const char *c, const wchar_t *w) {
 	return c;
 }
+
 template <>
 inline const wchar_t *_chooseLiteral<wchar_t>(const char *c, const wchar_t *w) {
 	return w;

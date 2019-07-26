@@ -12,11 +12,11 @@
 #include "PyCompile.h"
 #include "log.h"
 
-#if USE_CPYTHON
+#ifdef USE_CPYTHON
 
-#define HAVE_ROUND // newer VS has this, uncomment in older VS
+//#define HAVE_ROUND // newer VS has this, uncomment in older VS
 #undef _DEBUG      // don't get the debug lib
-#include <Python-ast.h>
+
 #include <Python.h>
 #include <marshal.h>
 
@@ -62,7 +62,7 @@ std::string getInteractiveLine() {
 
 	int      errcode = 0;
 	PyArena *arena   = PyArena_New();
-	mod_ty   mod     = PyParser_ASTFromFile(stdin, "blafilename", Py_single_input, ">>> ", "... ", nullptr, &errcode, arena);
+	struct _mod *  mod     = PyParser_ASTFromFile(stdin, "blafilename", Py_single_input, ">>> ", "... ", nullptr, &errcode, arena);
 	if (mod == nullptr) {
 		PyArena_Free(arena);
 		return std::string();

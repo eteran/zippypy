@@ -18,24 +18,24 @@ enum LogLevel {
 	LOGLEVEL_ERROR
 };
 
-inline void tostream(std::ostream &os) {
+inline void tostream(std::ostream &) {
 }
 
 template <typename T, typename... Args>
-inline void tostream(std::ostream &os, const T &v, const Args &... args) {
+inline void tostream(std::ostream &os, const T &v, Args &&... args) {
 	os << v;
-	tostream(os, args...);
+	tostream(os, std::forward<Args>(args)...);
 }
 
 template <typename... Args>
-void log(LogLevel lvl, const Args &... args) {
+void log(LogLevel lvl, Args &&... args) {
 	std::ostream *ostr;
 	if (lvl == LOGLEVEL_DEBUG)
 		ostr = &std::cout;
 	else
 		ostr = &std::cerr;
 
-	tostream(*ostr, args...);
+	tostream(*ostr, std::forward<Args>(args)...);
 	*ostr << "\n";
 }
 

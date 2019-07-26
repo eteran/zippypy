@@ -21,21 +21,23 @@ class VarArray {
 public:
 	VarArray()
 		: m_size(0), m_alloc(StaticSize), m_ptr(reinterpret_cast<T *>(m_arrbuf)), m_allocbuf(nullptr) {}
+
 	~VarArray() {
 		clear();
 	}
 
-	typedef T *      iterator;
-	typedef T        value_type;
-	typedef const T *const_iterator;
+	using iterator =  T *;
+	using value_type = T;
+	using const_iterator = const T *;
 
 	void reserve(int newAlloc) {
 		if (newAlloc > m_alloc) // means we need to allocate dynamically
 			realloc(m_size, newAlloc);
 	}
+
 	// use this to pre-init a fixed number of default constructed objects
 	void resize(int newSize) {
-		realloc(newSize, imax(newSize, m_alloc));
+		realloc(newSize, std::max(newSize, m_alloc));
 	}
 
 	void clear() {
@@ -44,10 +46,12 @@ public:
 			--i;
 			i->~T();
 		}
+
 		if (m_allocbuf != nullptr) {
 			delete[] m_allocbuf;
 			m_allocbuf = nullptr;
 		}
+
 		m_size  = 0;
 		m_alloc = StaticSize;
 		m_ptr   = reinterpret_cast<T *>(m_arrbuf);
@@ -71,12 +75,13 @@ public:
 	T &back() {
 		return m_ptr[m_size - 1];
 	}
+
 	const T &back() const {
 		return m_ptr[m_size - 1];
 	}
 
 	void insert(iterator before, const T &v) {
-		int beforeIdx = int(before - m_ptr);
+		auto beforeIdx = int(before - m_ptr);
 		ASSERT(beforeIdx >= 0 && beforeIdx <= m_size, "Unexpected beforeIdx ");
 
 		incAlloc();
@@ -104,6 +109,7 @@ public:
 		ASSERT(idx >= 0 && idx < m_size, "Unexpected idx");
 		return m_ptr[idx];
 	}
+
 	const T &operator[](int idx) const {
 		ASSERT(idx >= 0 && idx < m_size, "Unexpected idx");
 		return m_ptr[idx];
@@ -119,12 +125,15 @@ public:
 	iterator begin() {
 		return m_ptr;
 	}
+
 	iterator end() {
 		return m_ptr + m_size;
 	}
+
 	const_iterator begin() const {
 		return m_ptr;
 	}
+
 	const_iterator end() const {
 		return m_ptr + m_size;
 	}
@@ -142,7 +151,7 @@ private:
 
 		T *       oldPtr   = m_ptr;
 		int       oldSize  = m_size;
-		const int copySize = imin(newSize, oldSize);
+		const int copySize = std::min(newSize, oldSize);
 
 		if (newAlloc != m_alloc) // need to copy stuff
 		{
@@ -182,7 +191,7 @@ private:
 	}
 
 private:
-	DISALLOW_COPY_AND_ASSIGN(VarArray);
+	DISALLOW_COPY_AND_ASSIGN(VarArray)
 
 	int m_size;  // number of T elements added
 	int m_alloc; // we have enough allocated for this many T elements

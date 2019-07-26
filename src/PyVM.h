@@ -33,23 +33,23 @@
 #pragma warning(disable : 4355) // 'this' : used in base member initializer list
 
 class ModuleObject;
-typedef PoolPtr<ModuleObject> ModuleObjRef;
+using ModuleObjRef = PoolPtr<ModuleObject>;
 class Builtins;
-typedef PoolPtr<Builtins> BuiltinsObjRef;
+using BuiltinsObjRef = PoolPtr<Builtins>;
 class CodeObject;
-typedef PoolPtr<CodeObject> CodeObjRef;
+using CodeObjRef = PoolPtr<CodeObject>;
 class ClassObject;
-typedef PoolPtr<ClassObject> ClassObjRef;
+using ClassObjRef = PoolPtr<ClassObject>;
 
-typedef std::map<std::string, ModuleObjRef> ModulesDict;
+using ModulesDict = std::map<std::string, ModuleObjRef>;
 
 #ifdef USE_BOOST
-typedef boost::container::flat_map<std::string, ObjRef> NameDict;
+using NameDict = boost::container::flat_map<std::string, ObjRef>;
 #else
-typedef std::map<std::string, ObjRef> NameDict;
+using NameDict = std::map<std::string, ObjRef>;
 #endif
 
-typedef std::map<int64_t, ObjRef> IntDict;
+using IntDict = std::map<int64_t, ObjRef>;
 
 std::string stdstr(const ObjRef &vref, bool repr = false);
 void        print(const ObjRef &vref, std::ostream &out, bool repr);
@@ -63,7 +63,7 @@ enum EObjSlot {
 	SLOT_YIELD  = 1
 };
 
-typedef std::function<void(EObjSlot s, const ObjRef &)> SetObjCallback;
+using SetObjCallback = std::function<void(EObjSlot s, const ObjRef &)>;
 
 //extern int g_maxStackSize;
 
@@ -73,12 +73,12 @@ public:
 	void push(const T &ref) {
 		m_stack.push_back(ref);
 		//if (g_maxStackSize < m_stack.size())
-		//    g_maxStackSize = (int)m_stack.size();
+		//    g_maxStackSize = static_cast<int>(m_stack.size());
 	}
 	
 	// push an element some distance from the top. pushAt(0,r) is equivalent to push(r)
 	void pushAt(int fromTop, const T &ref) {
-		CHECK((int)m_stack.size() >= fromTop, "pushAt underflow");
+		CHECK(static_cast<int>(m_stack.size()) >= fromTop, "pushAt underflow");
 		//m_stack.insert(m_stack.size() - fromTop, ref);
 		m_stack.insert(m_stack.end() - fromTop, ref);
 	}
@@ -92,7 +92,7 @@ public:
 
 	// i - offset from the top. 0=TOS
 	T peek(int i) {
-		CHECK((int)m_stack.size() > i, "peek underflow");
+		CHECK(static_cast<int>(m_stack.size()) > i, "peek underflow");
 		return m_stack[m_stack.size() - 1 - i];
 	}
 	
@@ -101,7 +101,7 @@ public:
 	}
 	
 	int size() const {
-		return (int)m_stack.size();
+		return static_cast<int>(m_stack.size());
 	}
 	
 	void clear() {
@@ -166,7 +166,9 @@ class StreamPrinter {
 public:
 	StreamPrinter(std::ostream *os = nullptr)
 		: m_os(os) {}
+
 	virtual ~StreamPrinter() {}
+
 	virtual void endL() {
 		if (m_os != nullptr)
 			(*m_os) << std::endl;
@@ -188,7 +190,7 @@ public:
 	}
 
 private:
-	DISALLOW_COPY_AND_ASSIGN(LoggerPrinter); // needed because we're taking m_s address
+	DISALLOW_COPY_AND_ASSIGN(LoggerPrinter) // needed because we're taking m_s address
 	std::ostringstream m_s;
 	LogLevel           m_lvl;
 };
@@ -283,7 +285,7 @@ public:
 	}
 
 	// the import callback returns a pair with the stream to read the pyc from and a bool that says if the stream has a header
-	typedef std::function<std::pair<std::unique_ptr<std::istream>, bool>(const std::string &)> TImportCallback;
+	using TImportCallback = std::function<std::pair<std::unique_ptr<std::istream>, bool>(const std::string &)>;
 
 	void setImportCallback(TImportCallback callback) {
 		m_importCallback = callback;
@@ -292,12 +294,12 @@ public:
 		return m_currentFrame;
 	}
 
-#if USE_CPYTHON
+#ifdef USE_CPYTHON
 	void runInteractive();
 #endif
 
 private:
-	DISALLOW_COPY_AND_ASSIGN(PyVM);
+	DISALLOW_COPY_AND_ASSIGN(PyVM)
 	friend class Frame;
 	friend class OpImp;
 
@@ -363,7 +365,7 @@ struct Block {
 
 struct CallArgs {
 	// usually there are no more than 4 positional arguments for an internal function
-	typedef VarArray<ObjRef, 4> TPosVector;
+	using TPosVector = VarArray<ObjRef, 4>;
 
 	TPosVector pos;
 	NameDict   kw;
@@ -379,11 +381,13 @@ struct CallArgs {
 class Frame {
 public:
 	Frame(PyVM *vm, const ModuleObjRef &module, NameDict *locals)
-		: m_lasti(0), m_vm(vm), m_module(module), m_locals(locals), m_retslot(SLOT_RETVAL) {
+		: m_locals(locals), m_vm(vm), m_module(module), m_retslot(SLOT_RETVAL) {
+
 		m_lastFrame          = m_vm->m_currentFrame;
 		m_vm->m_currentFrame = this;
 		//m_stack.reserve(6);
 	}
+
 	~Frame() {
 		m_vm->m_currentFrame = m_lastFrame;
 	}
@@ -391,12 +395,15 @@ public:
 	void push(const ObjRef &ref) {
 		m_stack.push(ref);
 	}
+
 	ObjRef pop() {
 		return m_stack.pop();
 	}
+
 	ObjRef top() {
 		return m_stack.top();
 	}
+
 	ObjRef alloc(Object *o) {
 		return m_vm->alloc(o);
 	}
@@ -404,6 +411,7 @@ public:
 	void pushBlock(int type, int handler) {
 		m_blocks.push_back(Block(type, handler, m_stack.size()));
 	}
+
 	Block popBlock() {
 		CHECK(m_blocks.size() > 0, "block stack underflow");
 		Block r = m_blocks.back();
@@ -435,7 +443,7 @@ public:
 	}
 
 public:
-	uint               m_lasti;  // index in the code object string of the curret instruction
+	uint               m_lasti = 0;  // index in the code object string of the curret instruction
 	NameDict *         m_locals; // points to a dict on the stack
 	PyVM *             m_vm;
 	ModuleObjRef       m_module;    // for globals, needs an objet to reference, m_globals is not an object
@@ -445,7 +453,7 @@ public:
 	EObjSlot           m_retslot;   // the slot filled with the return value after a function call returns
 
 	// "usually" there are no more than 5 locals in a function
-	typedef VarArray<ObjRef, 5> TFastLocalsList;
+	using TFastLocalsList = VarArray<ObjRef, 5>;
 
 private:
 	CodeObjRef      m_code;

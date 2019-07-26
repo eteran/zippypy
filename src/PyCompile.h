@@ -11,7 +11,7 @@
 
 #include <string>
 
-#if USE_CPYTHON
+#ifdef USE_CPYTHON
 
 bool        compileTextToPycBuf(const std::string &text, const std::string &filename, std::string *outpyc);
 std::string getInteractiveLine();

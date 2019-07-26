@@ -59,9 +59,13 @@ static Object::Type typeValue() {
 	class NoType;
 	return sizeof(NoType); // compile error for types that are not instantiated in object.cpp
 }
+
+
 #define MAKE_TYPEVALUE(obj, val) \
 	template <>                  \
 	Object::Type Object::typeValue<obj>() { return Object::val; }
+
+
 MAKE_TYPEVALUE(BoolObject, BOOL)
 MAKE_TYPEVALUE(StrObject, STR)
 MAKE_TYPEVALUE(IntObject, INT)
@@ -82,6 +86,7 @@ MAKE_TYPEVALUE(UnicodeObject, USTR)
 MAKE_TYPEVALUE(Object, NONE)
 MAKE_TYPEVALUE(FloatObject, FLOAT)
 MAKE_TYPEVALUE(SliceObject, SLICE)
+
 #undef MAKE_TYPEVALUE
 
 InstanceObjRef ClassObject::createInstance() {
@@ -111,7 +116,6 @@ std::string MethodObject::funcname() const {
 
 void Builtins::add(const std::string &name, const ObjRef &v) {
 	addGlobal(v, name);
-	;
 }
 
 // see "All about co_lnotab" http://svn.python.org/projects/python/branches/pep-0384/Objects/lnotab_notes.txt
@@ -218,7 +222,7 @@ static T transformed(const T &str, TOp &op) {
 enum StrOp { SO_EQUALS,
 			 SO_CONTAINS,
 			 SO_BEGINS,
-			 SO_ENDS };
+			 SO_ENDS, };
 
 static void checkArgCountS(Object::Type t, const CallArgs::TPosVector &args, int c, const std::string &name) {
 	CHECK(args.size() == c, "method " << Object::typeName(t) << "." << name << " takes exactly " << c << "arguments (" << args.size() << " given)");

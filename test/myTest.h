@@ -21,8 +21,8 @@ using namespace std;
 
 struct TestAssert : public exception
 {
-    TestAssert(const string& desc) :m_desc(desc) {}
-    virtual const char* what() const {
+	TestAssert(const string& desc) :m_desc(desc) {}
+	virtual const char* what() const {
         return m_desc.c_str();
     }
     string m_desc;
@@ -247,4 +247,3 @@ CElementsAre<string> ElementsAre(const char first[], const Args&... args) {
     if (!(co.isTrue(argument))) { \
         ostringstream ss; ss << __LINE__ << ": " "Failed " #conditionCls " for " #argument "\n  which is: " << co.disp(argument); throw TestAssert(ss.str()); } \
     } while(false)
-        

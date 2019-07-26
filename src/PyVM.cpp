@@ -391,10 +391,10 @@ void PyVM::addBuiltin(const ClassObjRef &v) {
 
 void PyVM::runInteractive() {
 	while (true) {
-		string pycline = getInteractiveLine();
+		std::string pycline = getInteractiveLine();
 		if (pycline.empty())
 			break;
-		istringstream iss(pycline);
+		std::istringstream iss(pycline);
 		ObjRef        c = CodeDefinition::parsePyc(iss, this, false);
 		eval(dynamic_pcast<CodeObject>(c), mainModule());
 	}

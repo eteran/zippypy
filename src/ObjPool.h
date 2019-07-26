@@ -182,7 +182,7 @@ struct RefCount {
     ObjPool<T> *pool;
     typename DList<T>::Entry ent;
 private:
-    DISALLOW_COPY_AND_ASSIGN(RefCount);
+	DISALLOW_COPY_AND_ASSIGN(RefCount)
 };
 
 

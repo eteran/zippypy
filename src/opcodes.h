@@ -31,7 +31,7 @@ uchar opFlags(uchar op) {
 
 const char *opName(uchar op) {
 	static bool        inited     = false;
-	static const char *names[256] = {0};
+	static const char *names[256] = {nullptr};
 	if (!inited) {
 #define def_op(name, num, flags) names[num] = #name;
 #include "opcodes_def.h"
