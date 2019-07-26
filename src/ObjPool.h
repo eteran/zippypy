@@ -21,21 +21,25 @@ template<typename T>
 class PoolPtr 
 {
 public:
-    PoolPtr() : m_p(nullptr) {}
+	PoolPtr() = default;
+
     PoolPtr(const PoolPtr& o) : m_p(o.m_p) {
         if (m_p != nullptr) {
             ++m_p->count.count;
         }
     }
-    PoolPtr(PoolPtr&& o) {
+
+	PoolPtr(PoolPtr&& o) {
         m_p = o.m_p;
         o.m_p = nullptr;
     }
-    explicit PoolPtr(T* p) :m_p(p) {
+
+	explicit PoolPtr(T* p) :m_p(p) {
         if (m_p != nullptr)
             ++m_p->count.count;
     }
-    template<typename U>
+
+	template<typename U>
     explicit PoolPtr(const PoolPtr<U>& o) : m_p(nullptr) {
         if (o.get() == nullptr)
             return;
@@ -47,6 +51,7 @@ public:
     ~PoolPtr() {
         reset();
     }
+
     PoolPtr& operator=(const PoolPtr& o) {
         if (&o == this)
             return *this;
@@ -57,6 +62,7 @@ public:
         }
         return *this;
     }
+
     void reset() {
         if (m_p == nullptr)
             return;
@@ -65,21 +71,27 @@ public:
         }
         m_p = nullptr;
     }
+
     T* get() const {
         return m_p;
     }
+
     T* operator->() const {
         return m_p;
     }
+
     const T& operator*() const {
         return *m_p;
     }
+
     T& operator*() {
         return *m_p;
     }
+
     bool isNull() const {
         return m_p == nullptr;
     }
+
     int use_count() const {
         if (m_p == nullptr)
             return 0;
@@ -87,7 +99,7 @@ public:
     }
 
 private:
-    T* m_p;
+	T* m_p = nullptr;
 
     friend class ObjPool<T>;
 };
@@ -173,13 +185,11 @@ public:
 
 template<typename T>
 struct RefCount {
-    RefCount() : count(0), pool(nullptr)
-    {}
-    ~RefCount() {
-      //  delete remover;
-    }
-    int count;
-    ObjPool<T> *pool;
+	RefCount() = default;
+	~RefCount() = default;
+
+	int count = 0;
+	ObjPool<T> *pool = nullptr;
     typename DList<T>::Entry ent;
 private:
 	DISALLOW_COPY_AND_ASSIGN(RefCount)
@@ -197,8 +207,8 @@ template<typename T>
 class ObjPool 
 {
 public:
-    ObjPool() :m_hadRemove(false) //, m_lastTimePrintedObjCount(0)
-    {}
+	ObjPool() = default;
+
     // takes ownership of p
     PoolPtr<T> add(T* p) {  
         PoolPtr<T> ret(p);
@@ -272,7 +282,7 @@ public:
 
 private:
     DList<T> m_objs;
-    bool m_hadRemove; // used in gradForeach
+	bool m_hadRemove = false; // used in gradForeach
     //uint64_t m_lastTimePrintedObjCount;
 
 };

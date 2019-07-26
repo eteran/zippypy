@@ -20,7 +20,7 @@ template <typename T, int StaticSize>
 class VarArray {
 public:
 	VarArray()
-		: m_size(0), m_alloc(StaticSize), m_ptr(reinterpret_cast<T *>(m_arrbuf)), m_allocbuf(nullptr) {}
+		: m_alloc(StaticSize), m_ptr(reinterpret_cast<T *>(m_arrbuf)) {}
 
 	~VarArray() {
 		clear();
@@ -193,12 +193,12 @@ private:
 private:
 	DISALLOW_COPY_AND_ASSIGN(VarArray)
 
-	int m_size;  // number of T elements added
+	int m_size = 0;  // number of T elements added
 	int m_alloc; // we have enough allocated for this many T elements
 	// points to either m_arrray or equals to m_allocated.
 	// once it goes to m_allocated, it never goes back to m_arrbuf
 	T *m_ptr;
 	// not an array of T since we don't want to call ctors
 	char  m_arrbuf[sizeof(T) * StaticSize];
-	char *m_allocbuf;
+	char *m_allocbuf = nullptr;
 };

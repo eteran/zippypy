@@ -28,9 +28,10 @@
 class Instruction {
 public:
 	Instruction(uchar _opcode)
-		: opcode(_opcode), param(0) {}
+		: opcode(_opcode) {}
+
 	uchar  opcode;
-	ushort param;
+	ushort param = 0;
 };
 
 template <typename LT> // ListObject or TupleObject
@@ -1243,8 +1244,8 @@ ObjRef xrange(CallArgs &args, PyVM *vm) {
 //basic logging object, contained in builtin globals, should be one instance per PyVm
 class PyLogger {
 public:
-	PyLogger() {}
-	~PyLogger() {}
+	PyLogger()  = default;
+	~PyLogger() = default;
 
 	void debug(const std::vector<ObjRef> &args) {
 		plog(LOGLEVEL_DEBUG, args);

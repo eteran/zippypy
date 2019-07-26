@@ -23,7 +23,8 @@ public:
 	static ClassObjRef addToModule(const ModuleObjRef &mod);
 
 	AccessBuffer(PyVM *vm, size_t addr)
-		: m_vm(vm), m_p((char *)addr), m_offset(0) {}
+		: m_p((char *)addr), m_vm(vm) {}
+
 	int offset() {
 		return m_offset;
 	}
@@ -58,7 +59,7 @@ private:
 
 private:
 	char *m_p;
-	int   m_offset; // in bytes
+	int   m_offset = 0; // in bytes
 	PyVM *m_vm;
 };
 
@@ -67,17 +68,20 @@ class BufferBuilder {
 public:
 	static ClassObjRef addToModule(const ModuleObjRef &mod);
 
-	BufferBuilder(PyVM *)
-		: m_offset(0) {}
+	BufferBuilder(PyVM *) {}
+
 	void resize(int sz) {
 		m_buf.resize(sz);
 	}
+
 	int size() {
 		return (int)m_buf.size();
 	}
+
 	size_t c_ptr() {
 		return (size_t)m_buf.data();
 	}
+
 	std::string str() {
 		return m_buf;
 	}
@@ -92,5 +96,5 @@ private:
 
 private:
 	std::string m_buf;
-	int         m_offset;
+	int         m_offset = 0;
 };

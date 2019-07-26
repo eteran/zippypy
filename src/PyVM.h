@@ -167,7 +167,7 @@ public:
 	StreamPrinter(std::ostream *os = nullptr)
 		: m_os(os) {}
 
-	virtual ~StreamPrinter() {}
+	virtual ~StreamPrinter() = default;
 
 	virtual void endL() {
 		if (m_os != nullptr)

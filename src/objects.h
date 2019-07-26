@@ -866,16 +866,20 @@ struct ICtorWrap;
 struct ICInstWrap : public Object {
 	ICInstWrap()
 		: Object(CINSTANCE_WRAP) {}
+
 	void clear() override {
 		m_ctor.reset();
 	}
-	~ICInstWrap() override {}
+
+	~ICInstWrap() override = default;
+
 	PoolPtr<ICtorWrap> m_ctor; // this needs to be a pointer and we don't want a shared_ptr
 };
 template <typename T>
 struct CInstWrap : public ICInstWrap {
 	virtual T *ptr() = 0;
-	~CInstWrap() override {}
+
+	~CInstWrap() override = default;
 };
 // for pointer value given by the C user
 template <typename T>
@@ -902,7 +906,7 @@ struct CInstWrapSharedPtr : public CInstWrap<T> {
 	CInstWrapSharedPtr(std::shared_ptr<T> _v = nullptr)
 		: v(_v) {}
 
-	~CInstWrapSharedPtr() override {}
+	~CInstWrapSharedPtr() override = default;
 
 	T *                ptr() override { return v.get(); }
 	virtual std::shared_ptr<T> getSharedPtr() { return v; }
@@ -929,13 +933,14 @@ template <typename C, typename A1>
 struct CtorWrap : public ICtorWrap {
 	PoolPtr<ICInstWrap> construct(PyVM *vm, CallArgs &args) override {
 		A1 a1 = Extract<A1>()(args[0]);
-		return vm->alloct<ICInstWrap>(new CInstWrapSharedPtr<C>(std::shared_ptr<C>(new C(vm, a1))));
+		return vm->alloct<ICInstWrap>(new CInstWrapSharedPtr<C>(std::make_shared<C>(vm, a1)));
 	}
 };
+
 template <typename C> // partial specialization
 struct CtorWrap<C, NoType> : public ICtorWrap {
 	PoolPtr<ICInstWrap> construct(PyVM *vm, CallArgs &args) override {
-		return vm->alloct<ICInstWrap>(new CInstWrapSharedPtr<C>(std::shared_ptr<C>(new C(vm))));
+		return vm->alloct<ICInstWrap>(new CInstWrapSharedPtr<C>(std::make_shared<C>(vm)));
 	}
 };
 
