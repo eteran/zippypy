@@ -14,7 +14,7 @@
 class Deserialize
 {
 public:
-    Deserialize(istream& ins) : m_in(ins) 
+    Deserialize(std::istream& ins) : m_in(ins) 
     {}
     template<typename T>
     T read() {
@@ -22,20 +22,20 @@ public:
         m_in.read((char*)&v, sizeof(T));
         return v;
     }
-    string readStr(uint count) {
-        string s;
+    std::string readStr(uint count) {
+        std::string s;
         s.resize(count);
         m_in.read((char*)s.data(), count);
         return s;
     }
 
-    vector<ObjRef> m_internedStr;
+    std::vector<ObjRef> m_internedStr;
     int offset() const {
         return (int)m_in.tellg();
     }
 
 private:
-    istream& m_in;
+    std::istream& m_in;
 };
 
 ObjRef parseNext(Deserialize& s, PyVM* vm);
@@ -48,18 +48,18 @@ void CodeDefinition::parseCode(Deserialize& s, PyVM* vm)
     co_nlocals = s.read<uint>();
     co_stacksize = s.read<uint>();
     co_flags = s.read<uint>();
-    co_code = extract<string>(parseNext(s, vm));
-    co_consts = extract<vector<ObjRef>>(parseNext(s, vm));
+    co_code = extract<std::string>(parseNext(s, vm));
+    co_consts = extract<std::vector<ObjRef>>(parseNext(s, vm));
     
-    co_names = extract<vector<string>>(parseNext(s, vm));
-    co_varnames = extract<vector<string>>(parseNext(s, vm));
-    co_freevars = extract<vector<string>>(parseNext(s, vm));
-    co_cellvars = extract<vector<string>>(parseNext(s, vm));
-    co_filename = extract<string>(parseNext(s, vm));
-    co_name = extract<string>(parseNext(s, vm));
+    co_names = extract<std::vector<std::string>>(parseNext(s, vm));
+    co_varnames = extract<std::vector<std::string>>(parseNext(s, vm));
+    co_freevars = extract<std::vector<std::string>>(parseNext(s, vm));
+    co_cellvars = extract<std::vector<std::string>>(parseNext(s, vm));
+    co_filename = extract<std::string>(parseNext(s, vm));
+    co_name = extract<std::string>(parseNext(s, vm));
 
     co_firstlineno = s.read<uint>();
-    co_lnotab = extract<string>(parseNext(s, vm));
+    co_lnotab = extract<std::string>(parseNext(s, vm));
 }
 
 ObjRef parseNext(Deserialize& s, PyVM* vm) 
@@ -72,7 +72,7 @@ ObjRef parseNext(Deserialize& s, PyVM* vm)
     case 'F': return vm->makeFromT(false);
     case 'T': return vm->makeFromT(true);
     case 'i': return vm->makeFromT(s.read<int>());
-    case 'I': return vm->makeFromT(s.read<int64>());
+    case 'I': return vm->makeFromT(s.read<int64_t>());
     case 'g': return vm->makeFromT(s.read<double>());
     case 's': { 
         uint sz = s.read<uint>(); 
@@ -103,17 +103,17 @@ ObjRef parseNext(Deserialize& s, PyVM* vm)
         int h = s.read<uint>(); // number of digits, sign is the sign of the number
         int sz = std::abs(h);
         int pos = 0;
-        int64 res = 0;
+        int64_t res = 0;
         for(int i = 0; i < sz; ++i) {
             auto b = s.read<ushort>();
-            res |= (int64)b << pos;
+            res |= (int64_t)b << pos;
             pos += 15; 
         }
         return vm->makeFromT(h < 0 ? -res : res);
     }
     case 'u': { // utf8 unicode
         uint sz = s.read<uint>(); 
-        wstring us;
+        std::wstring us;
         CHECK(wstrFromUtf8(s.readStr(sz), &us), "Failed reading UTF8");
         return vm->makeFromT(us); 
     }
@@ -131,12 +131,12 @@ ObjRef parseNext(Deserialize& s, PyVM* vm)
 }
 
 
-ObjRef CodeDefinition::parsePyc(istream& iss, PyVM* vm, bool hasHeadr)
+ObjRef CodeDefinition::parsePyc(std::istream& iss, PyVM* vm, bool hasHeadr)
 {
     Deserialize d(iss);
     if (hasHeadr) {
         uint magic = d.read<uint>();
-        CHECK(magic == 0x0a0df303, "Unexpected magic number in marshal format " << hex << magic);
+        CHECK(magic == 0x0a0df303, "Unexpected magic number in marshal format " << std::hex << magic);
         uint timestamp = d.read<uint>();
     }
     return parseNext(d, vm);

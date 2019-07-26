@@ -25,13 +25,13 @@ class PyVM;
 
 struct IAttrable {
     // try to lookup the name, if not found, return nullptr ref
-    virtual ObjRef attr(const string& name) = 0;
-    virtual void setattr(const string& name, const ObjRef& o) = 0;
+    virtual ObjRef attr(const std::string& name) = 0;
+    virtual void setattr(const std::string& name, const ObjRef& o) = 0;
 };
 
 struct ICallable {
     virtual ObjRef call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self) = 0;
-    virtual string funcname() const = 0; // for logging
+    virtual std::string funcname() const = 0; // for logging
 };
 
 
@@ -104,16 +104,16 @@ public:
 
     virtual void clear() {}
 
-    virtual ObjRef attr(const string& name) {
+    virtual ObjRef attr(const std::string& name) {
         THROW("Unimplemented Object::attr");
     }
-    virtual void setattr(const string& name, const ObjRef& o) {
+    virtual void setattr(const std::string& name, const ObjRef& o) {
         THROW("Unimplemented Object::setattr");
     }
     virtual ObjRef call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self) {
         THROW("Unimplemented Object::call");
     }
-    virtual string funcname() const  {
+    virtual std::string funcname() const  {
         THROW("Unimplemented Object::funcname");
     }
 public:

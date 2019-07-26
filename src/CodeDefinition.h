@@ -17,22 +17,22 @@ class Deserialize;
 class CodeDefinition 
 {
 public:
-    static ObjRef parsePyc(istream& iss, PyVM* vm, bool hasHeader);
+    static ObjRef parsePyc(std::istream& iss, PyVM* vm, bool hasHeader);
 
     void parseCode(Deserialize& s, PyVM* vm);
 public:
-    string co_name;
+    std::string co_name;
     uint co_argcount;
     uint co_nlocals;
-    vector<string> co_varnames;
-    vector<string> co_cellvars;
-    vector<string> co_freevars;
-    string co_code;
-    vector<ObjRef> co_consts;
-    vector<string> co_names;
-    string co_filename;
+    std::vector<std::string> co_varnames;
+    std::vector<std::string> co_cellvars;
+    std::vector<std::string> co_freevars;
+    std::string co_code;
+    std::vector<ObjRef> co_consts;
+    std::vector<std::string> co_names;
+    std::string co_filename;
     uint co_firstlineno;
-    string co_lnotab;
+    std::string co_lnotab;
     uint co_stacksize;
     uint co_flags;
 };

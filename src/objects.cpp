@@ -13,8 +13,8 @@
 #include "PyVM.h"
 #include "OpImp.h"
 
+#include <cstring>
 
-using namespace std;
 
 const char* Object::typeName(Type type) {
     switch (type) {
@@ -73,18 +73,18 @@ InstanceObjRef ClassObject::createInstance() {
     return i;
 }
 
-ObjRef ModuleObject::defIc(const string& name, const ICWrapPtr& ic) {
+ObjRef ModuleObject::defIc(const std::string& name, const ICWrapPtr& ic) {
     ic->setName(name);
     return addGlobal(m_vm->alloc(new CFuncObject(ic)), name);
 }
 
-ClassObjRef ModuleObject::emptyClass(const string& name) {
-    ClassObjRef ret = m_vm->alloct(new ClassObject(m_vm->alloct(new StrDictObject()), vector<ObjRef>(/*bases*/), name, ModuleObjRef(this), m_vm));
+ClassObjRef ModuleObject::emptyClass(const std::string& name) {
+    ClassObjRef ret = m_vm->alloct(new ClassObject(m_vm->alloct(new StrDictObject()), std::vector<ObjRef>(/*bases*/), name, ModuleObjRef(this), m_vm));
     addGlobal(ObjRef(ret), name);
     return ret;
 }
 
-string MethodObject::funcname() const {
+std::string MethodObject::funcname() const {
     if (m_self.isNull())
         return "nullptrSELF." + m_func->funcname();
     if (m_self->m_class.isNull())
@@ -92,7 +92,7 @@ string MethodObject::funcname() const {
     return m_self->m_class->funcname() + "." + m_func->funcname();
 }
 
-void Builtins::add(const string& name, const ObjRef& v) {
+void Builtins::add(const std::string& name, const ObjRef& v) {
     addGlobal(v, name);;
 }
 
@@ -100,7 +100,7 @@ void Builtins::add(const string& name, const ObjRef& v) {
 
 // see "All about co_lnotab" http://svn.python.org/projects/python/branches/pep-0384/Objects/lnotab_notes.txt
 int CodeObject::lineFromIndex(int qi) const {
-    const string& tab = m_co.co_lnotab;
+    const std::string& tab = m_co.co_lnotab;
     if ((tab.size() % 2) != 0)
         return -1; //strange format
     int lineno = m_co.co_firstlineno, addr = 0;
@@ -128,7 +128,7 @@ ObjRef UnicodeObject::fromStr(const ObjRef& s, PyVM* vm) {
     return vm->alloc(new UnicodeObject(checked_dynamic_pcast<StrObject>(s)));
 }
 
-ObjRef ClassObject::attr(const string& name) {
+ObjRef ClassObject::attr(const std::string& name) {
     ObjRef v = tryLookup(m_dict->v, name);
     if (!v.isNull())
         return v;
@@ -145,7 +145,7 @@ PoolPtr<MethodObject> MethodObject::bind(const InstanceObjRef& newself) {
 }
 
 
-ObjRef InstanceObject::simple_attr(const string& name) 
+ObjRef InstanceObject::simple_attr(const std::string& name) 
 {
     // try in the instance
     ObjRef v = tryLookup(m_dict, name);
@@ -170,7 +170,7 @@ ObjRef InstanceObject::simple_attr(const string& name)
 }
 
 
-ObjRef InstanceObject::attr(const string& name) 
+ObjRef InstanceObject::attr(const std::string& name) 
 {
     ObjRef v = simple_attr(name);
     if (!v.isNull())
@@ -178,7 +178,7 @@ ObjRef InstanceObject::attr(const string& name)
 
     ObjRef getatt = simple_attr("__getattr__");
     if (!getatt.isNull()) {
-        vector<ObjRef> gargs;
+        std::vector<ObjRef> gargs;
         gargs.push_back(m_class->m_vm->makeFromT(name));
         try {
             return m_class->m_vm->callv(getatt, gargs);
@@ -209,7 +209,7 @@ static T transformed(const T& str, TOp& op) {
 enum StrOp { SO_EQUALS, SO_CONTAINS, SO_BEGINS, SO_ENDS };
 
 
-static void checkArgCountS(Object::Type t, const CallArgs::TPosVector& args, int c, const string& name) {
+static void checkArgCountS(Object::Type t, const CallArgs::TPosVector& args, int c, const std::string& name) {
     CHECK(args.size() == c, "method " << Object::typeName(t) << "." << name << " takes exactly " << c << "arguments (" << args.size() << " given)");
 }
 void PrimitiveAttrAdapter::checkArgCount(const ObjRef obj, const CallArgs::TPosVector& args, int c) {
@@ -223,18 +223,18 @@ template<typename TC>
 static bool stringQuery(const ObjRef& thisv, const CallArgs::TPosVector& args, StrOp op, StrModifier mod) 
 {
     checkArgCountS(Object::STR, args, 1, "cmp"); // STR is just for logging
-    const basic_string<TC>* a = extractStrPtr<TC>(args[0], mod);
-    const basic_string<TC>* v = extractStrPtr<TC>(thisv, mod); 
+    const std::basic_string<TC>* a = extractStrPtr<TC>(args[0], mod);
+    const std::basic_string<TC>* v = extractStrPtr<TC>(thisv, mod); 
 
     if (a->size() > v->size())
         return false;
     switch (op) {
     case SO_CONTAINS:
-        return v->find(*a) != basic_string<TC>::npos;
+        return v->find(*a) != std::basic_string<TC>::npos;
     case SO_BEGINS:
-        return memcmp(v->data(), a->data(), a->size() * sizeof(TC)) == 0;
+        return std::memcmp(v->data(), a->data(), a->size() * sizeof(TC)) == 0;
     case SO_ENDS:
-        return memcmp(v->data() + v->size() - a->size(), a->data(), a->size() * sizeof(TC)) == 0;
+        return std::memcmp(v->data() + v->size() - a->size(), a->data(), a->size() * sizeof(TC)) == 0;
     case SO_EQUALS:
         return *a == *v;
     }
@@ -248,35 +248,35 @@ static bool stringQuery(const ObjRef& thisv, const CallArgs::TPosVector& args, S
 template<typename TC>
 static ObjRef split(const ObjRef& o, const CallArgs::TPosVector& args, PyVM* vm) 
 {
-    basic_string<TC> s = extract<basic_string<TC>>(o);
+    std::basic_string<TC> s = extract<std::basic_string<TC>>(o);
     ListObjRef ret = vm->alloct(new ListObject);
     if (args.size() == 1 || args.size() == 2) 
     {
-        basic_string<TC> sep = extract<basic_string<TC> >(args[0]);
+        std::basic_string<TC> sep = extract<std::basic_string<TC> >(args[0]);
         bool addEmpty = true; // the default documented behaviour 
         if (args.size() == 2)
             addEmpty = extract<bool>(args[1]);
         size_t next = 0, current = 0;
         do {
             next = s.find(sep, current);
-            basic_string<TC> v = s.substr(current, next - current);
+            std::basic_string<TC> v = s.substr(current, next - current);
             if (!v.empty() || addEmpty) {
                 ret->append(vm->alloc(new PSTROBJ_TYPE(TC)(v)));
             }
             current = next + sep.size();
-        } while (next != string::npos);
+        } while (next != std::string::npos);
     }
     else if (args.size() == 0)
     {
         size_t next = 0, current = 0;
         do {
             next = s.find_first_of( LITERAL_TSTR(TC, " \t\n\r"), current);
-            basic_string<TC> v = s.substr(current, next - current);
+            std::basic_string<TC> v = s.substr(current, next - current);
             if (!v.empty()) {
                 ret->append(vm->alloc(new PSTROBJ_TYPE(TC)(v)));
             }
             current = next + 1;
-        } while (next != string::npos);
+        } while (next != std::string::npos);
     }
     else 
         THROW("Unexpected number of arguments (" << args.size() << ") in split()");
@@ -293,7 +293,7 @@ static ObjRef join(const ObjRef& s, const CallArgs::TPosVector& args, PyVM* vm) 
     auto it = ito->as<IIterator>();
     ObjRef o;
     if (!it->next(o))
-        return vm->makeFromT(basic_string<TC>());
+        return vm->makeFromT(std::basic_string<TC>());
     ObjRef result = o;
     OpImp ops(vm);
     while (it->next(o)) {
@@ -360,21 +360,21 @@ ObjRef PrimitiveAttrAdapter::stringMethod(const ObjRef& obj, const CallArgs::TPo
     case STRM_JOIN:
         return join<TC>(obj, args, m_vm);
     case STRM_LOWER:
-        return m_vm->makeFromT(toLower(extract<basic_string<TC>>(obj)));
+        return m_vm->makeFromT(toLower(extract<std::basic_string<TC>>(obj)));
     case STRM_C_PTR:
         return m_vm->makeFromT( static_cast<StrBaseObject*>(m_obj.get())->ptr());
     case STRM_GLOB_PTR: {
         // leak this string
-        basic_string<TC> *new_st = new basic_string<TC>(extract<basic_string<TC>>(obj));
+        std::basic_string<TC> *new_st = new std::basic_string<TC>(extract<std::basic_string<TC>>(obj));
         return m_vm->makeFromT((size_t)new_st->data()); 
     }
     case STRM_STRIP: {
-		basic_string<TC> nonConstS = extract<basic_string<TC>>(obj);
+		std::basic_string<TC> nonConstS = extract<std::basic_string<TC>>(obj);
 		if (args.size() == 0){
 			trimSpaces(nonConstS);
 			return m_vm->makeFromT(nonConstS);
 		}
-		strip<TC>(nonConstS, extract<basic_string<TC>>(args[0]));
+		strip<TC>(nonConstS, extract<std::basic_string<TC>>(args[0]));
 		return m_vm->makeFromT(nonConstS);
 	}
     } // switch

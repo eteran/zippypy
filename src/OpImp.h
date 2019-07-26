@@ -43,7 +43,7 @@ public:
 
     template<typename LT>
     ObjRef makeListFromStack(Frame& frame, int count);
-    void print(const ObjRef& vref, ostream& out);
+    void print(const ObjRef& vref, std::ostream& out);
 
     ObjRef len(const ObjRef& arg);
 
@@ -57,8 +57,8 @@ public:
         return vm->alloc(new StrObject(stdstr(arg, true)));
     }
     ObjRef hex(const ObjRef& n) {
-        int64 num = checked_cast<IntObject>(n)->v;
-        stringstream ss; ss << "0x" << std::hex << num;
+        int64_t num = checked_cast<IntObject>(n)->v;
+        std::stringstream ss; ss << "0x" << std::hex << num;
         return vm->alloc(new StrObject(ss.str()));
     }
     ObjRef int_(const ObjRef& arg);

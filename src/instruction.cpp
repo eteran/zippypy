@@ -17,11 +17,8 @@
 #include "utils.h"
 
 #include <sstream>
-/*#include <boost/foreach.hpp>
-#include <boost/math/special_functions/round.hpp>
-#include <boost/property_tree/ptree.hpp> // for json
-#include <boost/property_tree/json_parser.hpp>
-*/
+#include <cmath>
+
 
 
 
@@ -100,7 +97,7 @@ bool OpImp::operIn(const ObjRef& lhs, const ObjRef& rhs, bool isPositive) {
         auto* d = checked_dynamic_pcast<StrDictObject>(rhs.get());
         if (lhs->type != Object::STR)
             return !isPositive;
-        const string& key = checked_dynamic_pcast<StrObject>(lhs)->v;
+        const std::string& key = checked_dynamic_pcast<StrObject>(lhs)->v;
         auto it = d->v.find(key);
         return (it != d->v.end()) == isPositive;
     }
@@ -230,7 +227,7 @@ public:
         return Guard(this, ref.get());
     }
 private:
-    vector<Object*> m_rec;
+    std::vector<Object*> m_rec;
     friend struct RecurionTracker::Guard;
 };
 
@@ -262,7 +259,7 @@ static std::basic_string<TC> printStr(const std::basic_string<TC>& s, bool repr,
     return e;
 }
 
-void print_recurse(const ObjRef& vref, ostream& out, RecurionTracker& tracker, bool repr) 
+void print_recurse(const ObjRef& vref, std::ostream& out, RecurionTracker& tracker, bool repr) 
 {
     // prevent infinite recursion
     auto guard = tracker.enter(vref);
@@ -344,13 +341,13 @@ void print_recurse(const ObjRef& vref, ostream& out, RecurionTracker& tracker, b
     }
 }
 
-void print(const ObjRef& vref, ostream& out, bool repr) {
+void print(const ObjRef& vref, std::ostream& out, bool repr) {
     RecurionTracker rec;
     print_recurse(vref, out, rec, repr);
 }
 
 
-string stdstr(const ObjRef& vref, bool repr) {
+std::string stdstr(const ObjRef& vref, bool repr) {
     std::ostringstream ss;
     print(vref, ss, repr);
     return ss.str();
@@ -377,7 +374,7 @@ ObjRef OpImp::minusType(Object *arg) {
     return vm->alloc(new OT( -((OT*)arg)->v ));
 }
 template<typename OT>
-static int64 lenType(Object* arg) {
+static int64_t lenType(Object* arg) {
     return checked_cast<OT>(arg)->v.size();
 }
 
@@ -518,9 +515,9 @@ ObjRef OpImp::unot(const ObjRef& argref) {
 }
 
 
-static int64 intLen(const ObjRef& argref) {
+static int64_t intLen(const ObjRef& argref) {
     Object *arg = argref.get();
-    int64 l = 0;
+    int64_t l = 0;
     switch (arg->type) {
     case Object::LIST:  return lenType<ListObject>(arg);
     case Object::TUPLE: return lenType<TupleObject>(arg);
@@ -538,10 +535,10 @@ ObjRef OpImp::len(const ObjRef& arg) {
     return vm->makeFromT(intLen(arg));
 }
 
-int64 lexical_cast(const string& s) {
+int64_t lexical_cast(const std::string& s) {
     return strtoll(s.c_str(), nullptr, 10);
 }
-int64 lexical_cast(const wstring& s) {
+int64_t lexical_cast(const std::wstring& s) {
     return wcstoull(s.c_str(), nullptr, 10);
 }
 
@@ -549,12 +546,12 @@ int64 lexical_cast(const wstring& s) {
 ObjRef OpImp::int_(const ObjRef& arg) {
     if (arg->type == Object::INT)
         return arg;
-    int64 i = 0;
+    int64_t i = 0;
     switch (arg->type) {
     case Object::STR:   i = lexical_cast(static_pcast<StrObject>(arg)->v); break;
     case Object::USTR:  i = lexical_cast(static_pcast<UnicodeObject>(arg)->v); break;
     case Object::BOOL:  i = static_pcast<BoolObject>(arg)->v ? 1 : 0; break;
-    case Object::FLOAT: i = (int64)(static_pcast<FloatObject>(arg)->v); break;
+    case Object::FLOAT: i = (int64_t)(static_pcast<FloatObject>(arg)->v); break;
     default:
     THROW("int() can't convert type " << arg->typeName() << " to int");
     }
@@ -562,7 +559,7 @@ ObjRef OpImp::int_(const ObjRef& arg) {
 }
 
 template<typename TC>
-static bool boolFromStr(const basic_string<TC>& s) {
+static bool boolFromStr(const std::basic_string<TC>& s) {
     return !s.empty() && toLower(s) != LITERAL_TSTR(TC, "false");
 }
 
@@ -599,7 +596,7 @@ ObjRef OpImp::apply_slice(const ObjRef& o, int* startp, int* endp)
     if (o->type != Object::STR) {
         THROW("slice implemented only on strings. got " << o->typeName());
     }
-    const string& s = static_pcast<StrObject>(o)->v;
+    const std::string& s = static_pcast<StrObject>(o)->v;
     int start = 0, end = 0;
     if (startp != nullptr)
         start = *startp;
@@ -613,7 +610,7 @@ ObjRef OpImp::apply_slice(const ObjRef& o, int* startp, int* endp)
     if (end < 0)
         end = (int)s.length() + end;
     int len = imin((int)s.length(), end - start);
-    string res;
+    std::string res;
     if (len > 0)
         res = s.substr(start, len);
     return vm->makeFromT(res);
@@ -622,13 +619,13 @@ ObjRef OpImp::apply_slice(const ObjRef& o, int* startp, int* endp)
 
 
 
-static int64 notMinusOne(int64 h) {
+static int64_t notMinusOne(int64_t h) {
     if (h == -1)
         return -2;
     return h;
 }
 
-int64 hashNum(const Object* arg) {
+int64_t hashNum(const Object* arg) {
     if (arg == nullptr || arg->type == Object::NONE) {
         return 0x1234; // here None and nullptr object are treated the same
     }
@@ -636,16 +633,16 @@ int64 hashNum(const Object* arg) {
     case Object::BOOL: 
         return ((BoolObject*)arg)->v ? 1:0;
     case Object::INT: {
-        int64 n = ((IntObject*)arg)->v;
+        int64_t n = ((IntObject*)arg)->v;
         return notMinusOne(n);
     }
     case Object::FLOAT: {
         double f = ((FloatObject*)arg)->v;
         double ip = 0.0;
         if (modf(f, &ip) == 0.0)
-            return notMinusOne((int64)f);
+            return notMinusOne((int64_t)f);
         else 
-            return notMinusOne(*(int64*)&f);
+            return notMinusOne(*(int64_t*)&f);
     }
     case Object::USTR:
     case Object::STR: { // same as CPython
@@ -659,7 +656,7 @@ int64 hashNum(const Object* arg) {
         return notMinusOne(h);
     }
     case Object::TUPLE: {
-        const vector<ObjRef> v = ((ListObject*)arg)->v;
+        const std::vector<ObjRef> v = ((ListObject*)arg)->v;
         int h = 0x345678;
         for(size_t i = 0; i < v.size(); ++i)
             h = (h * 1000003) ^ (int)hashNum(v[i].get());
@@ -668,27 +665,27 @@ int64 hashNum(const Object* arg) {
     }
     case Object::CLASS:
     case Object::INSTANCE: {
-        return notMinusOne( ((int64)arg) >> 4 );
+        return notMinusOne( ((int64_t)arg) >> 4 );
     }
     }
     THROW("Not hashable");
 }
 
-int64 hashNum(const ObjRef& argref) {
+int64_t hashNum(const ObjRef& argref) {
     return hashNum(argref.get());
 }
 
-int64 hashStr(const string& s) {
+int64_t hashStr(const std::string& s) {
     StrObject so(s);
     return hashNum(&so);
 }
 
-int64 binOp(int64 a, int64 b, uchar op) {
+int64_t binOp(int64_t a, int64_t b, uchar op) {
     switch (op) {
     case BINARY_OR:  case INPLACE_OR: return a | b;
     case BINARY_AND: case INPLACE_AND: return a & b;
     case BINARY_XOR: case INPLACE_XOR: return a ^ b;
-    case BINARY_RSHIFT: case INPLACE_RSHIFT: return (*(uint64*)&a) >> b; // avoid sign extension
+    case BINARY_RSHIFT: case INPLACE_RSHIFT: return (*(uint64_t*)&a) >> b; // avoid sign extension
     case BINARY_LSHIFT: case INPLACE_LSHIFT: return a << b;
     }
     THROW("Unexpected op");
@@ -716,7 +713,7 @@ void Frame::doOpcode( SetObjCallback& setObj )
         m_fastlocals[ins.param] = pop();
         break;
     case LOAD_NAME: {   // can be done with just the index
-        const string& name = c.co_names[ins.param];
+        const std::string& name = c.co_names[ins.param];
         ObjRef v = tryLookup(locals(), name);
         if (v.isNull()) {
             v = lookupGlobal(name);
@@ -833,7 +830,7 @@ void Frame::doOpcode( SetObjCallback& setObj )
         setObj(SLOT_RETVAL, pop());
         return; // don't increment m_lasti so we'll know where we returned for debugging
     case LOAD_GLOBAL: {
-        const string& name = c.co_names[ins.param];
+        const std::string& name = c.co_names[ins.param];
         ObjRef v = lookupGlobal(name);
         CHECK(!v.isNull(), "Unable to find global `" << name << "`");
         push(v);
@@ -894,7 +891,7 @@ void Frame::doOpcode( SetObjCallback& setObj )
         break;
     }
     case LOAD_ATTR: {
-        const string& name = c.co_names[ins.param];
+        const std::string& name = c.co_names[ins.param];
         ObjRef o = pop();
         CHECK(!o.isNull(), "attribute of None object " << name);
         IAttrable *attrb = o->tryAs<IAttrable>();
@@ -1003,7 +1000,7 @@ void Frame::doOpcode( SetObjCallback& setObj )
     case INPLACE_LSHIFT: {
         ObjRef b = pop();
         ObjRef a = pop();
-        int64 ret = binOp(checked_cast<IntObject>(a)->v, checked_cast<IntObject>(b)->v, ins.opcode);
+        int64_t ret = binOp(checked_cast<IntObject>(a)->v, checked_cast<IntObject>(b)->v, ins.opcode);
         push(m_vm->alloc(new IntObject(ret)));
         break;
     }
@@ -1077,7 +1074,7 @@ void Frame::doOpcode( SetObjCallback& setObj )
 void PyVM::validateCode(const CodeObjRef& obj) 
 {
     // check that all the opcodes in all code constants are implemented.
-    const string& c = obj->m_co.co_code;
+    const std::string& c = obj->m_co.co_code;
     size_t i = 0;
     while (i < c.length()) {
         uchar opc = c[i];
@@ -1094,7 +1091,7 @@ void PyVM::validateCode(const CodeObjRef& obj)
 }
 
 
-ObjRef Builtins::get(const string& name) {
+ObjRef Builtins::get(const std::string& name) {
     return attr(name);
 }
 
@@ -1122,9 +1119,9 @@ int checkVmVersion(int req) {
 
 
 // works only for IAttrables at the moment
-ObjRef getattr(const vector<ObjRef>& args) {
+ObjRef getattr(const std::vector<ObjRef>& args) {
     CHECK(args.size() == 2 || args.size() == 3, "getattr expects 2 or 3 arguments, got " << args.size());
-    string name = extract<string>(args[1]);
+    std::string name = extract<std::string>(args[1]);
     IAttrable *attrb = args[0]->tryAs<IAttrable>();
     if (attrb != nullptr){
         ObjRef v = attrb->attr(name);
@@ -1138,7 +1135,7 @@ ObjRef getattr(const vector<ObjRef>& args) {
 }
 
 
-ObjRef round(CallArgs& args, PyVM* vm) {
+ObjRef math_round(CallArgs& args, PyVM* vm) {
     CHECK(args.pos.size() == 1 , "round expects 1 argument, got " << args.pos.size());
     ObjRef arg = args[0];
     double res;
@@ -1157,7 +1154,7 @@ ObjRef round(CallArgs& args, PyVM* vm) {
 
 
 
-bool hasattr(ObjRef o, const string& name) {
+bool hasattr(ObjRef o, const std::string& name) {
     IAttrable *attrb = o->tryAs<IAttrable>();
     if (attrb != nullptr){
         ObjRef v = attrb->attr(name);
@@ -1238,7 +1235,7 @@ static NameDict makeDictFrom(const bpt::ptree& pt, PyVM* vm)
 
 ObjRef OpImp::runtime_import(const ObjRef& filenameObj) 
 {
-    string filename = extract<string>(filenameObj);
+    string filename = extract<std::string>(filenameObj);
     string modname = extractFileNameWithoutExtension(filename);
     ModuleObjRef mod = tryLookup(vm->modules(), modname); // don't want to read the file every time some file calls runtime_import on the same thing
     if (!mod.isNull())
@@ -1246,7 +1243,7 @@ ObjRef OpImp::runtime_import(const ObjRef& filenameObj)
 
     CHECK(bool(vm->m_runtimeImportCallback), "runtime_import: no runtime import defined for reading `" << filename << "`");
 
-    const string* code = vm->m_runtimeImportCallback(filename);
+    const std::string* code = vm->m_runtimeImportCallback(filename);
     if (code == nullptr) 
         return vm->makeNone();
 
@@ -1291,7 +1288,7 @@ ObjRef OpImp::runtime_import(const ObjRef& filenameObj)
 // support for __metaclass__
 ObjRef type_(CallArgs& args, PyVM* vm) {
     CHECK(args.pos.size() == 3, "Wrong number of arguments to type()");
-    auto name = extract<string>(args.pos[0]);
+    auto name = extract<std::string>(args.pos[0]);
     auto bases = checked_cast<TupleObject>(args.pos[1])->v;
     auto methods = checked_cast<StrDictObject>(args.pos[2]);
     // the module is set in BUILD_CLASS
@@ -1321,7 +1318,7 @@ Builtins::Builtins(PyVM* vm)
     defIc("hex", makeOpImpCWrap(&OpImp::hex, m_vm));
     defIc("int", makeOpImpCWrap(&OpImp::int_, m_vm));
     defIc("bool", makeOpImpCWrap(&OpImp::bool_, m_vm));
-    def("round", round);
+    def("round", math_round);
     def("strdict", strdict);
     def("staticmethod", staticmethod);
     def("xrange", xrange);

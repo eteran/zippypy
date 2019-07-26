@@ -13,17 +13,15 @@
 #include <string>
 #include <algorithm>
 
-using namespace std;
+bool wstrFromUtf8(const std::string& s, std::wstring *out);
+std::wstring wstrFromAnsi(const std::string& s);
+std::string ansiFromwstr(const std::wstring& s);
 
-bool wstrFromUtf8(const string& s, wstring *out);
-wstring wstrFromAnsi(const string& s);
-string ansiFromwstr(const wstring& s);
+std::string utf8FromWstr(const std::wstring& s);
 
-string utf8FromWstr(const wstring& s);
+std::string extractFileNameWithoutExtension(const std::string& s);
 
-string extractFileNameWithoutExtension(const string& s);
-
-uint64 msecTime();
+uint64_t msecTime();
 void debugBreak();
 void MessageBoxCall();
 
@@ -35,14 +33,16 @@ void consoleSetColor(int col);
 
 
 template<typename TC>
-basic_string<TC> toLower(const basic_string<TC>& s) {
-    basic_string<TC> c(s);
-    transform(c.begin(), c.end(), c.begin(), tolower);
+std::basic_string<TC> toLower(const std::basic_string<TC>& s) {
+    std::basic_string<TC> c(s);
+    std::transform(c.begin(), c.end(), c.begin(), [](TC c) {
+		return std::tolower(c);
+	});
     return c;
 }
 
 template<typename TC, typename F>
-void trim(basic_string<TC>& str, const F& pred) {
+void trim(std::basic_string<TC>& str, const F& pred) {
     size_t first = 0;
     size_t len = str.length();
     if (len == 0)
@@ -50,7 +50,7 @@ void trim(basic_string<TC>& str, const F& pred) {
     while (first < len && pred(str[first]))
         ++first;
     if (first == len) {
-        str = basic_string<TC>();
+        str = std::basic_string<TC>();
         return;
     }
     int last = (int)len-1;
@@ -62,14 +62,14 @@ void trim(basic_string<TC>& str, const F& pred) {
 
 
 template<typename TC>
-void trimSpaces(basic_string<TC>& str) {
+void trimSpaces(std::basic_string<TC>& str) {
     trim(str, [](TC c)->bool { return c == ' ' || c == '\t' || c == '\n'; });
 }
 
 template<typename TC>
-void strip(basic_string<TC>& str, const basic_string<TC>& remove) {
+void strip(std::basic_string<TC>& str, const std::basic_string<TC>& remove) {
     trim(str, [&](TC c)->bool {
-        return remove.find(c) != basic_string<TC>::npos;
+        return remove.find(c) != std::basic_string<TC>::npos;
     });
 }
 

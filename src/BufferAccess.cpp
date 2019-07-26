@@ -9,9 +9,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "BufferAccess.h"
+#include <cstring>
 
 
-#define CATCH_ACCESS_VIOLATION(func) catch(const exception&) { throw; }\
+#define CATCH_ACCESS_VIOLATION(func) catch(const std::exception&) { throw; }\
      catch(...) { THROW("Exception in " #func " " << (void*)m_p << "+" << m_offset); }
     // in case we didn't have ExceptionsTranslator
 
@@ -41,7 +42,7 @@ ObjRef AccessBuffer::readInt(int numBytes) {
     case 1: return readNum<char>();
     case 2: return readNum<short>(); 
     case 4: return readNum<int>();
-    case 8: return readNum<int64>();
+    case 8: return readNum<int64_t>();
     default: THROW("can't readInt " << numBytes);
     }
 }
@@ -55,7 +56,7 @@ ObjRef AccessBuffer::readCStr() {
 }
 ObjRef AccessBuffer::readBuf(int len) {
     try {
-        string s(m_p + m_offset, len);
+        std::string s(m_p + m_offset, len);
         m_offset += len;
         return m_vm->makeFromT(s);
     } CATCH_ACCESS_VIOLATION(readBuf)
@@ -63,7 +64,7 @@ ObjRef AccessBuffer::readBuf(int len) {
 ObjRef AccessBuffer::readWCStr(){ 
     try {
         int count = (int)wcslen((wchar_t*)(m_p + m_offset));
-        wstring s;
+        std::wstring s;
         s.resize(count);
         memcpy((char*)s.data(), m_p + m_offset, count * sizeof(wchar_t));
         m_offset += (count + 1) * sizeof(wchar_t); // consume nullptr termination
@@ -79,12 +80,12 @@ void AccessBuffer::writeInt(int numBytes, const ObjRef v) {
     case 1: return writeNum<char>(v);
     //case 2: return writeNum<short>(v); # TODO - Fix, Not compiling
     case 4: return writeNum<int>(v);
-    case 8: return writeNum<int64>(v);
+    case 8: return writeNum<int64_t>(v);
     default: THROW("can't writeInt " << numBytes);
     }
 }
 
-void AccessBuffer::writeCStr(const string& s) {
+void AccessBuffer::writeCStr(const std::string& s) {
     try {
         int count = (int)s.length() + 1;
         memcpy(m_p + m_offset, (char*)s.c_str(), count); // c_str guarantees that it will be nullptr terminated
@@ -151,12 +152,12 @@ void BufferBuilder::writeInt(int numBytes, const ObjRef v) {
     case 1: return writeNum<char>(v);
     case 2: return writeNum<short>(v);
     case 4: return writeNum<int>(v);
-    case 8: return writeNum<int64>(v);
+    case 8: return writeNum<int64_t>(v);
     default: THROW("can't writeInt " << numBytes);
     }
 }
 
-void BufferBuilder::writeCStr(const string& s) {
+void BufferBuilder::writeCStr(const std::string& s) {
     if (m_offset + s.length() + 1 > m_buf.size())
         m_buf.resize(m_offset + s.length() + 1);
     memcpy((char*)m_buf.data() + m_offset, s.c_str(), s.length() + 1);

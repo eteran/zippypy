@@ -30,7 +30,7 @@ void Frame::argsFromStack(Frame& from, int posCount, int kwCount, CallArgs& args
     for(int i = 0; i < kwCount; ++i) {
         ObjRef v = from.pop();
         ObjRef k = from.pop();
-        args.kw[extract<string>(k)] = v;
+        args.kw[extract<std::string>(k)] = v;
     }
     args.pos.reserve(posCount + 1); // avoid push_back allocating - all positional args + possible self
     for(int i = 0; i < posCount; ++i) {
@@ -40,7 +40,7 @@ void Frame::argsFromStack(Frame& from, int posCount, int kwCount, CallArgs& args
 }
 
 /*
-static void testNoneAndSet(NameDict& dest, const string& name, const ObjRef& v) {
+static void testNoneAndSet(NameDict& dest, const std::string& name, const ObjRef& v) {
     auto it = dest.find(name);
     CHECK(it == dest.end(), "Key already there `" << name << "`");
     dest[name] = v;
@@ -72,10 +72,10 @@ void Frame::localsFromStack(Frame& from, ObjRef self, int posCount, int kwCount)
     // go over the args in the stack, match to locals
     for(int i = 0; i < kwCount; ++i) { // arguments passed by key-value
         ObjRef val = from.pop();
-        string aname = checked_cast<StrObject>(from.pop())->v;
+        std::string aname = checked_cast<StrObject>(from.pop())->v;
         int ci = 0;
         for(; ci < (int)c.co_argcount; ++ci) {
-            const string& cname = c.co_varnames[ci];
+            const std::string& cname = c.co_varnames[ci];
             if (cname == aname) {
                 //testNoneAndSet(dest, cname, val);
                 testNoneAndSet(dest, ci, val);
@@ -108,7 +108,7 @@ NameDict& Frame::globals() {
     return m_module->m_globals; 
 }
 
-ObjRef Frame::lookupGlobal(const string& name) {
+ObjRef Frame::lookupGlobal(const std::string& name) {
     ObjRef ret = tryLookup(globals(), name);
     if (!ret.isNull())
         return ret;
@@ -221,7 +221,7 @@ PyVM::~PyVM() {
     clear();
 }
 
-string PyVM::instructionPointer() {
+std::string PyVM::instructionPointer() {
     std::ostringstream os;
     os << "(" << m_lastFramei << ") ";
     Frame* f = m_currentFrame;
@@ -265,7 +265,7 @@ ObjRef PyVM::eval(const CodeObjRef& code, ModuleObjRef module) {
     return frame.run();
 }
 
-ModuleObjRef PyVM::addEmptyModule(const string& name) {
+ModuleObjRef PyVM::addEmptyModule(const std::string& name) {
     ModuleObjRef module(alloct(new ModuleObject(name, this)));
     module->m_globals["__name__"] = alloc(new StrObject(name));
     m_modules[name] = module;
@@ -273,7 +273,7 @@ ModuleObjRef PyVM::addEmptyModule(const string& name) {
 }
 
 /*
-ModuleObjRef PyVM::importModule(const CodeDefinition& moduleDef, const string& name)
+ModuleObjRef PyVM::importModule(const CodeDefinition& moduleDef, const std::string& name)
 {    // co_name would always be <module> so there's no sense in this
     string extName = name.empty() ? moduleDef.co_name : name;
     auto module = addEmptyModule(extName);
@@ -282,11 +282,11 @@ ModuleObjRef PyVM::importModule(const CodeDefinition& moduleDef, const string& n
 }
 */
 
-ModuleObjRef PyVM::importPycStream(istream& is, const string& path, bool hasHeader)
+ModuleObjRef PyVM::importPycStream(std::istream& is, const std::string& path, bool hasHeader)
 {
     ObjRef obj = CodeDefinition::parsePyc(is, this, hasHeader);
     auto code = checked_cast<CodeObject>(obj);
-    string modName;
+    std::string modName;
     if (!code->m_co.co_filename.empty())
         modName = extractFileNameWithoutExtension(code->m_co.co_filename); 
     else if (!code->m_co.co_name.empty() && code->m_co.co_name != "<module>")
@@ -300,22 +300,22 @@ ModuleObjRef PyVM::importPycStream(istream& is, const string& path, bool hasHead
     return module;
 }
 
-ModuleObjRef PyVM::importPycFile(const string& pycpath) 
+ModuleObjRef PyVM::importPycFile(const std::string& pycpath) 
 {
-    ifstream ifs(pycpath, ios::binary);
+    std::ifstream ifs(pycpath, std::ios::binary);
     if (!ifs.good())
         return ModuleObjRef();
     return importPycStream(ifs, pycpath, true);
 }
 
-ModuleObjRef PyVM::importPycBuf(const string& pyctext, bool hasHeader)
+ModuleObjRef PyVM::importPycBuf(const std::string& pyctext, bool hasHeader)
 {
-    istringstream iss(pyctext);
-    return importPycStream(iss, string(), hasHeader);
+    std::istringstream iss(pyctext);
+    return importPycStream(iss, std::string(), hasHeader);
 }
 
 
-ModuleObjRef PyVM::getModule(const string& name) {
+ModuleObjRef PyVM::getModule(const std::string& name) {
     ModuleObjRef mod = tryLookup(m_modules, name);
     if (!mod.isNull())
         return mod;
@@ -327,10 +327,10 @@ ModuleObjRef PyVM::getModule(const string& name) {
     THROW("Did not find module " << name);
 }
 
-vector<string> split(const string &s, char delim) {
-    vector<string> elems;
-    stringstream ss(s);
-    string item;
+std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    std::stringstream ss(s);
+    std::string item;
     while (std::getline(ss, item, delim)) {
         elems.push_back(item);
     }
@@ -340,12 +340,12 @@ vector<string> split(const string &s, char delim) {
 // restrictions of names:
 // - code can't import one module to another
 // - can't call one class from another
-ObjRef PyVM::lookupQual(const string& name, ModuleObjRef* mod) 
+ObjRef PyVM::lookupQual(const std::string& name, ModuleObjRef* mod) 
 {
     ModuleObjRef module = m_defaultModule; 
-    string funcname = name;
-    if (funcname.find('.') != string::npos) {
-        vector<string> names = split(funcname, '.');
+    std::string funcname = name;
+    if (funcname.find('.') != std::string::npos) {
+        std::vector<std::string> names = split(funcname, '.');
         CHECK(names.size() == 2, "Only one module nesting allowed: " << name);
         module = getModule(names[0]);
         funcname = names[1];
@@ -366,14 +366,14 @@ ObjRef PyVM::lookupQual(const string& name, ModuleObjRef* mod)
 }
 
 // from cpp code
-ObjRef PyVM::callv(const string& funcname, const vector<ObjRef>& posargs) {
+ObjRef PyVM::callv(const std::string& funcname, const std::vector<ObjRef>& posargs) {
     //ModuleObjRef module;
     ObjRef func = lookupQual(funcname, nullptr); // parse module.funcname and get the object
     return callv(func, posargs);
 }
 
 // from cpp code
-ObjRef PyVM::callv(const ObjRef& ofunc, const vector<ObjRef>& posargs) {
+ObjRef PyVM::callv(const ObjRef& ofunc, const std::vector<ObjRef>& posargs) {
     ofunc->checkProp(Object::ICALLABLE);
     CallableObjRef func = static_pcast<CallableObject>(ofunc);
     Frame dummyFrame(this, func->m_module, nullptr);
@@ -387,7 +387,7 @@ void PyVM::addGlobalFunc(const CodeDefinition& cdef) {
     m_defaultModule->addGlobal(alloc(new FuncObject(alloct(new CodeObject(cdef)), m_defaultModule)), cdef.co_name);
 }
 
-void PyVM::memDump(ostream& os) {
+void PyVM::memDump(std::ostream& os) {
     os << "Memory Dump: " << m_alloc.size() << " objects\n";
     m_alloc.foreach([&](const ObjRef& o)->bool {
         os << "(" << o.use_count() << ") " << o->typeName() << ": " << stdstr(o, true) << "\n";

@@ -14,30 +14,29 @@
 #include <string>
 #include <sstream>
 
-using namespace std;
 
-
-class PyException : public exception
+class PyException : public std::exception
 {
 public:
-    PyException(const string& desc) : m_desc(desc)
+    PyException(const std::string& desc) : m_desc(desc)
     {}
-    virtual const char* what() const {
+	
+    virtual const char* what() const noexcept {
         return m_desc.c_str();
     }
 
-    void addTrack(const string& t) {
+    void addTrack(const std::string& t) {
         trackback += t + "\n";
     }
 
 public:
-    string trackback;
+    std::string trackback;
 private:
-    string m_desc;
+    std::string m_desc;
 };
 
-#define CHECK(pred, msg) do { if (!(pred)) { stringstream ss; ss << msg; throw PyException(ss.str()); } } while(false)
+#define CHECK(pred, msg) do { if (!(pred)) { std::stringstream ss; ss << msg; throw PyException(ss.str()); } } while(false)
 
 #define ASSERT(pred, msg) CHECK(pred, msg)
 
-#define THROW(msg) do { stringstream ss; ss << msg; throw PyException(ss.str()); } while(false)
+#define THROW(msg) do { std::stringstream ss; ss << msg; throw PyException(ss.str()); } while(false)

@@ -215,7 +215,7 @@ public:
     }
 
  /*   void printObjCntIfNeeded(){
-        uint64 currentMsec = os::OSUtils::msecTimeFast();
+        uint64_t currentMsec = os::OSUtils::msecTimeFast();
         if ((currentMsec - m_lastTimePrintedObjCount) > OBJ_CNT_PRINT_DELTA_MS){
             LOG_DEBUG("There are ", m_objs.size(), " objects in pyvm object pool");
             m_lastTimePrintedObjCount = currentMsec;
@@ -273,7 +273,7 @@ public:
 private:
     DList<T> m_objs;
     bool m_hadRemove; // used in gradForeach
-    //uint64 m_lastTimePrintedObjCount;
+    //uint64_t m_lastTimePrintedObjCount;
 
 };
 

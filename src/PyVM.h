@@ -16,6 +16,7 @@
 #include "log.h"
 #include "CodeDefinition.h"
 
+#include <algorithm>
 #include <iostream>
 #include <functional>
 #include <vector>
@@ -29,8 +30,6 @@
 
 #pragma warning (disable: 4355) // 'this' : used in base member initializer list
 
-using namespace std;
-
 
 class ModuleObject;
 typedef PoolPtr<ModuleObject> ModuleObjRef;
@@ -41,19 +40,19 @@ typedef PoolPtr<CodeObject> CodeObjRef;
 class ClassObject;
 typedef PoolPtr<ClassObject> ClassObjRef;
 
-typedef map<string, ModuleObjRef> ModulesDict;
+typedef std::map<std::string, ModuleObjRef> ModulesDict;
 
 #ifdef USE_BOOST
-typedef boost::container::flat_map<string, ObjRef> NameDict;
+typedef boost::container::flat_map<std::string, ObjRef> NameDict;
 #else
-typedef map<string, ObjRef> NameDict;
+typedef std::map<std::string, ObjRef> NameDict;
 #endif
 
-typedef map<int64, ObjRef> IntDict;
+typedef std::map<int64_t, ObjRef> IntDict;
 
 
-string stdstr(const ObjRef& vref, bool repr=false);
-void print(const ObjRef& vref, ostream& out, bool repr);
+std::string stdstr(const ObjRef& vref, bool repr=false);
+void print(const ObjRef& vref, std::ostream& out, bool repr);
 int vmVersion();
 
 class PyVM;
@@ -103,8 +102,8 @@ public:
     void clear() {
         m_stack.clear();
     }
-    vector<T> data() { // for testers
-        vector<T> r;
+    std::vector<T> data() { // for testers
+        std::vector<T> r;
         m_stack.foreach([&](const T& v) { r.push_back(v); });
         //r = m_stack;
         return r; 
@@ -118,17 +117,17 @@ private:
     //vector<T> m_stack;
 };
 
-extern map<string, int> g_lookups;
+extern std::map<std::string, int> g_lookups;
 
 template<typename T>
-T tryLookup(const map<string, T>& d, const string& name) {
+T tryLookup(const std::map<std::string, T>& d, const std::string& name) {
     auto it = d.find(name);
     if (it == d.end())
         return T();
     return it->second;
 }
 
-inline ObjRef tryLookup(const NameDict& d, const string& name) {
+inline ObjRef tryLookup(const NameDict& d, const std::string& name) {
     //++g_lookups[name];
     auto it = d.find(name);
     if (it == d.end())
@@ -137,13 +136,13 @@ inline ObjRef tryLookup(const NameDict& d, const string& name) {
 }
 
 template<typename T>
-T lookup(const map<string, T>& d, const string& name) {
+T lookup(const std::map<std::string, T>& d, const std::string& name) {
     auto it = d.find(name);
     CHECK(it != d.end(), "KeyError: could not find `" << name << "`");
     return it->second;
 }
 
-inline ObjRef lookup(const NameDict& d, const string& name) {
+inline ObjRef lookup(const NameDict& d, const std::string& name) {
     //++g_lookups[name];
     auto it = d.find(name);
     CHECK(it != d.end(), "KeyError: could not find `" << name << "`");
@@ -158,14 +157,14 @@ inline ObjRef lookup(const NameDict& d, const string& name) {
 
 class StreamPrinter {
 public:
-    StreamPrinter(ostream* os = nullptr) : m_os(os) {}
+    StreamPrinter(std::ostream* os = nullptr) : m_os(os) {}
     virtual ~StreamPrinter() {}
     virtual void endL() {
         if (m_os != nullptr)
             (*m_os) << std::endl;
     }
 public:
-    ostream* m_os;
+    std::ostream* m_os;
 };
 
 class LoggerPrinter : public StreamPrinter {
@@ -175,7 +174,7 @@ public:
     }
     virtual void endL() {
         log(m_lvl, m_s.str());
-        m_s.str(string()); // clear the buffer
+        m_s.str(std::string()); // clear the buffer
     }
 private:
     DISALLOW_COPY_AND_ASSIGN(LoggerPrinter); // needed because we're taking m_s address
@@ -189,38 +188,38 @@ public:
     PyVM();
     ~PyVM();
 
-    void setStdout(ostream* s) {
+    void setStdout(std::ostream* s) {
         m_out.reset(new StreamPrinter(s));
     }
 
     void addGlobalFunc(const CodeDefinition& code);
 
-    ObjRef callv(const ObjRef& func, const vector<ObjRef>& posargs);
-    ObjRef callv(const string& funcname, const vector<ObjRef>& posargs);
+    ObjRef callv(const ObjRef& func, const std::vector<ObjRef>& posargs);
+    ObjRef callv(const std::string& funcname, const std::vector<ObjRef>& posargs);
 
     template<typename ...Args>
     ObjRef call(const ObjRef& func, Args&&... args) {
-        vector<ObjRef> argv({ makeFromT(args)... });
+        std::vector<ObjRef> argv({ makeFromT(args)... });
         return callv(func, argv);
     }
 
     template<typename ...Args>
-    ObjRef call(const string& funcname, Args&&... args) {
-        vector<ObjRef> argv({ makeFromT(args)... });
+    ObjRef call(const std::string& funcname, Args&&... args) {
+        std::vector<ObjRef> argv({ makeFromT(args)... });
         return callv(funcname, argv);
     }
 
     ObjRef eval(const CodeObjRef& code, ModuleObjRef module);
 
-    ModuleObjRef addEmptyModule(const string& name);
-   // ModuleObjRef importModule(const CodeDefinition& moduleDef, const string& name);
-    ModuleObjRef getModule(const string& name);
+    ModuleObjRef addEmptyModule(const std::string& name);
+   // ModuleObjRef importModule(const CodeDefinition& moduleDef, const std::string& name);
+    ModuleObjRef getModule(const std::string& name);
 
-    ModuleObjRef importPycStream(istream& is, const string& path, bool hasHeader);
-    ModuleObjRef importPycFile(const string& pycpath);
-    ModuleObjRef importPycBuf(const string& pyctext, bool hasHeader = false);
+    ModuleObjRef importPycStream(std::istream& is, const std::string& path, bool hasHeader);
+    ModuleObjRef importPycFile(const std::string& pycpath);
+    ModuleObjRef importPycBuf(const std::string& pyctext, bool hasHeader = false);
 
-//     void addDummyModule(const string& name) {
+//     void addDummyModule(const std::string& name) {
 //         m_modules[name] = ModuleObjRef();
 //     }
 
@@ -250,7 +249,7 @@ public:
     ObjRef makeTuple(const A1& a1, const A2& a2);
 
     // memory introspection
-    void memDump(ostream& os);
+    void memDump(std::ostream& os);
     int countObjects() {
         return m_alloc.size();
     }
@@ -261,11 +260,11 @@ public:
         return m_defaultModule;
     }
     template<typename T> // T should be some Object
-    void addBuiltin(const string& name, const PoolPtr<T>& v);
+    void addBuiltin(const std::string& name, const PoolPtr<T>& v);
     void addBuiltin(const ClassObjRef& v); // name taken from the class
 
-    string instructionPointer();
-    ObjRef lookupQual(const string& name, ModuleObjRef* mod);
+    std::string instructionPointer();
+    ObjRef lookupQual(const std::string& name, ModuleObjRef* mod);
     ObjPool<Object>& objPool() { 
         return m_alloc; 
     }
@@ -274,7 +273,7 @@ public:
     }
     
     // the import callback returns a pair with the stream to read the pyc from and a bool that says if the stream has a header
-    typedef std::function<pair<unique_ptr<istream>,bool>(const string&)> TImportCallback;
+    typedef std::function<std::pair<std::unique_ptr<std::istream>,bool>(const std::string&)> TImportCallback;
 
     void setImportCallback(TImportCallback callback) {
         m_importCallback = callback;
@@ -313,7 +312,7 @@ private:
 template<> inline ObjRef PyVM::makeFromT(ObjRef v) {  
     return v; 
 }
-int64 hashStr(const string& s);
+int64_t hashStr(const std::string& s);
 
 // this class is istantiated on the stack to save the current state of the object pool
 // when it goes out of scope it calls 'clear()' for all objects created after it's instantiation
@@ -410,10 +409,10 @@ public:
     }
 
     void doOpcode(SetObjCallback& setObj);
-    ObjRef lookupGlobal(const string& name);
+    ObjRef lookupGlobal(const std::string& name);
 
     void argsFromStack(Frame& from, int posCount, int kwCount, CallArgs& args);
-   // void localsFromArgs(const vector<ObjRef>& args);
+   // void localsFromArgs(const std::vector<ObjRef>& args);
     void localsFromStack(Frame& from, ObjRef self, int posCount, int kwCount);
 
     NameDict& locals() { return *m_locals; }
@@ -432,7 +431,7 @@ public:
     NameDict *m_locals; // points to a dict on the stack
     PyVM* m_vm;
     ModuleObjRef m_module; // for globals, needs an objet to reference, m_globals is not an object
-    vector<Block> m_blocks; // every for,try,except,finally,with is a block
+    std::vector<Block> m_blocks; // every for,try,except,finally,with is a block
     Frame* m_lastFrame;  // previous frame on the stack
     Stack<ObjRef> m_stack; // value stack
     EObjSlot m_retslot; // the slot filled with the return value after a function call returns

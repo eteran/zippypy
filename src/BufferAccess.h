@@ -35,7 +35,7 @@ public:
     ObjRef readCStr();
     ObjRef readBuf(int len);
     ObjRef readWCStr();
-	void writeCStr(const string& s);
+	void writeCStr(const std::string& s);
 
     // set the cursor to a position in the buffer
     // origin is one of ORIGIN_BEG, ORIGIN_CUR, offset is positive or negative, can use SIZEOF_PTR
@@ -75,19 +75,19 @@ public:
     size_t c_ptr() {
         return (size_t)m_buf.data();
     }
-    string str() {
+    std::string str() {
         return m_buf;
     }
 
     void writePtr(const ObjRef& v);
     void writeInt(int numBytes, const ObjRef v);
-    void writeCStr(const string& s);
+    void writeCStr(const std::string& s);
 private:
     template<typename T>
     void writeNum(const ObjRef& o);
 
 private:
-    string m_buf;
+    std::string m_buf;
     int m_offset;
 };
 

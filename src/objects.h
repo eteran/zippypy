@@ -15,6 +15,7 @@
 #include "PyVM.h"
 #include "utils.h"
 
+
 #include <string>
 #include <vector>
 #include <map>
@@ -22,7 +23,7 @@
 #include <unordered_map>
 
 
-using namespace std;
+struct TupleObject;
 
 
 inline bool isStrType(Object::Type t) {
@@ -80,9 +81,9 @@ struct BoolObject : public Object {
 struct IntObject : public Object {
     IntObject(uint _v) :Object(INT), v(_v) {}
     IntObject(int _v) :Object(INT), v(_v) {}
-    IntObject(int64 _v) :Object(INT), v(_v) {}
-    IntObject(uint64 _v) :Object(INT) { *(uint64*)&v = _v; } // copy the binary value
-    int64 v;
+    IntObject(int64_t _v) :Object(INT), v(_v) {}
+    IntObject(uint64_t _v) :Object(INT) { *(uint64_t*)&v = _v; } // copy the binary value
+    int64_t v;
 };
 
 struct FloatObject : public Object {
@@ -171,23 +172,6 @@ struct MapIterObject : public IteratorObject, public IIterable
     typename MapType::iterator i;
 
     PyVM *m_vm;
-};
-
-
-template<typename T>
-struct MapKeyValueIterObject : public MapIterObject<T> 
-{
-    MapKeyValueIterObject(const PoolPtr<T>& l, PyVM* vm) : MapIterObject(l, vm)	{}
-    virtual bool next(ObjRef& obj) {
-        if(i == of->v.end())
-            return false;
-        auto t = m_vm->alloct(new TupleObject);
-        t->append(m_vm->makeFromT(i->first));
-        t->append(i->second);
-        obj = ObjRef(t);
-        ++i;
-        return true;
-    }
 };
 
 
@@ -289,17 +273,17 @@ enum StrModifier {
 // various caches for an StrObject (ansi)
 struct StrExtension
 {
-    StrExtension(const string* _v) :v(_v), has_iv(false), has_pathv(false), has_wv(false), has_wiv(false), has_wpathv(false)
+    StrExtension(const std::string* _v) :v(_v), has_iv(false), has_pathv(false), has_wv(false), has_wiv(false), has_wpathv(false)
     {}
     bool has_iv, has_pathv, has_wv, has_wiv, has_wpathv;
-    const string* v;
-    string iv; // lower case ansi
-    string pathv; // path-normalized ansi
-    wstring wv; // wide-char cache
-    wstring wiv; // lower case wide-char
-    wstring wpathv; // path-normalized wide-char
+    const std::string* v;
+    std::string iv; // lower case ansi
+    std::string pathv; // path-normalized ansi
+    std::wstring wv; // wide-char cache
+    std::wstring wiv; // lower case wide-char
+    std::wstring wpathv; // path-normalized wide-char
 
-    string* getStr(StrModifier mod) {
+    std::string* getStr(StrModifier mod) {
         if (mod == STRMOD_CASEI) {
             if (!has_iv) {
                 iv = toLower(*v);
@@ -316,7 +300,7 @@ struct StrExtension
         }*/
         THROW("Unexpected string (StrE) modifier" << mod);
     }
-    wstring* getWStr(StrModifier mod) {
+    std::wstring* getWStr(StrModifier mod) {
         if (!has_wv) { // need to make wv anyway
             wv = wstrFromAnsi(*v);
             has_wv = true;
@@ -338,7 +322,7 @@ struct StrExtension
             }
             return &wpathv;
         }*/
-        THROW("Unexpected wstring (StrE) modifier" << mod);
+        THROW("Unexpected std::wstring (StrE) modifier" << mod);
     }
 
 };
@@ -348,7 +332,7 @@ struct StrObject : public StrBaseObject, public GenericIterable<StrObject>, publ
 {
     StrObject() :StrBaseObject(STR) {}
     explicit StrObject(char c) :StrBaseObject(STR), v(1, c) {}
-    explicit StrObject(const string& _v) :StrBaseObject(STR), v(_v) {}
+    explicit StrObject(const std::string& _v) :StrBaseObject(STR), v(_v) {}
     virtual int size() const {
         return (int)v.size();
     }
@@ -359,7 +343,7 @@ struct StrObject : public StrBaseObject, public GenericIterable<StrObject>, publ
         return (size_t)v.data();
     }
 
-    const string* getStr(StrModifier mod) {
+    const std::string* getStr(StrModifier mod) {
         if (mod == STRMOD_NONE)
             return &v;
         if (ext.get() == nullptr)
@@ -367,14 +351,14 @@ struct StrObject : public StrBaseObject, public GenericIterable<StrObject>, publ
         return ext->getStr(mod);
     }
 
-    const wstring* getWStr(StrModifier mod) {
+    const std::wstring* getWStr(StrModifier mod) {
         // STRs are immutable so it's ok to cache it once
         if (ext.get() == nullptr)
             ext.reset(new StrExtension(&v));
         return ext->getWStr(mod);
     }
 
-    string v;
+    std::string v;
     std::unique_ptr<StrExtension> ext;    
 };
 typedef PoolPtr<StrObject> StrObjRef;
@@ -383,14 +367,14 @@ typedef PoolPtr<StrObject> StrObjRef;
 // various caches for an StrObject (ansi)
 struct UnicodeExtension
 {
-    UnicodeExtension(const wstring* _wv) :wv(_wv), has_wiv(false), has_wpathv(false)
+    UnicodeExtension(const std::wstring* _wv) :wv(_wv), has_wiv(false), has_wpathv(false)
     {}
     bool has_wiv, has_wpathv;
-    const wstring* wv;
-    wstring wiv; // lower case wide-char
-    wstring wpathv; // path-normalized wide-char
+    const std::wstring* wv;
+    std::wstring wiv; // lower case wide-char
+    std::wstring wpathv; // path-normalized wide-char
 
-    wstring* getWStr(StrModifier mod) {
+    std::wstring* getWStr(StrModifier mod) {
         if (mod == STRMOD_CASEI) {
             if (!has_wiv) {
                 wiv = toLower(*wv);
@@ -405,7 +389,7 @@ struct UnicodeExtension
             }
             return &wpathv;
         }*/
-        THROW("Unexpected wstring (UnicodeE) modifier" << mod);
+        THROW("Unexpected std::wstring (UnicodeE) modifier" << mod);
     }
 
 };
@@ -418,10 +402,10 @@ struct UnicodeObject : public StrBaseObject, public GenericIterable<UnicodeObjec
 {
     UnicodeObject() :StrBaseObject(USTR) {}
     explicit UnicodeObject(wchar_t c) :StrBaseObject(USTR), v(1, c) {}
-    explicit UnicodeObject(const wstring& _v) :StrBaseObject(USTR), v(_v) {}
-    UnicodeObject(const string& _v, EEncoding enc) :StrBaseObject(USTR) {
+    explicit UnicodeObject(const std::wstring& _v) :StrBaseObject(USTR), v(_v) {}
+    UnicodeObject(const std::string& _v, EEncoding enc) :StrBaseObject(USTR) {
         if (enc == ENC_UTF8)
-            CHECK(wstrFromUtf8(_v, &v), "Failed utf-8 to wstring conversion");
+            CHECK(wstrFromUtf8(_v, &v), "Failed utf-8 to std::wstring conversion");
         else if (enc == ENC_ASCII)
             v = wstrFromAnsi(_v);
     }
@@ -441,7 +425,7 @@ struct UnicodeObject : public StrBaseObject, public GenericIterable<UnicodeObjec
         return (size_t)v.data();
     }
 
-    const wstring* getWStr(StrModifier mod) {
+    const std::wstring* getWStr(StrModifier mod) {
         if (mod == STRMOD_NONE)
             return &v;
         if (ext.get() == nullptr)
@@ -449,14 +433,14 @@ struct UnicodeObject : public StrBaseObject, public GenericIterable<UnicodeObjec
         return ext->getWStr(mod);
     }
 
-    wstring v;
+    std::wstring v;
     std::unique_ptr<UnicodeExtension> ext;
 };
 
 
 struct ListObject : public Object, public GenericSubscriptable<ListObject, ObjRef>, public GenericIterable<ListObject> 
 {
-    ListObject(const vector<ObjRef>& o)
+    ListObject(const std::vector<ObjRef>& o)
         :Object(LIST), v(o)
     {}
     ListObject(Type _type = LIST) :Object(_type) 
@@ -481,7 +465,7 @@ struct ListObject : public Object, public GenericSubscriptable<ListObject, ObjRe
         return ref;
     }
 
-    vector<ObjRef> v;
+    std::vector<ObjRef> v;
 };
 typedef PoolPtr<ListObject> ListObjRef;
 
@@ -491,7 +475,21 @@ struct TupleObject : public ListObject {
 
 typedef PoolPtr<TupleObject> TupleObjRef;
 
-
+template<typename T>
+struct MapKeyValueIterObject : public MapIterObject<T> 
+{
+    MapKeyValueIterObject(const PoolPtr<T>& l, PyVM* vm) : MapIterObject<T>(l, vm)	{}
+    virtual bool next(ObjRef& obj) {
+        if(this->i == this->of->v.end())
+            return false;
+        auto t = this->m_vm->alloct(new TupleObject);
+        t->append(this->m_vm->makeFromT(this->i->first));
+        t->append(this->i->second);
+        obj = ObjRef(t);
+        ++this->i;
+        return true;
+    }
+};
 
 //BOOST_STATIC_ASSERT(sizeof(int16) == sizeof(wchar_t));
 
@@ -502,17 +500,17 @@ struct PObjType;
 template<> struct PObjType<short int> { typedef IntObject ot; };
 template<> struct PObjType<int>       { typedef IntObject ot; };
 template<> struct PObjType<uint>      { typedef IntObject ot; };
-template<> struct PObjType<int64>     { typedef IntObject ot; };
-template<> struct PObjType<uint64>    { typedef IntObject ot; };
+template<> struct PObjType<int64_t>     { typedef IntObject ot; };
+template<> struct PObjType<uint64_t>    { typedef IntObject ot; };
 template<> struct PObjType<bool>   { typedef BoolObject ot; };
-template<> struct PObjType<string>        { typedef StrObject ot; };
-template<> struct PObjType<string&>       { typedef StrObject ot; }; 
-template<> struct PObjType<const string&> { typedef StrObject ot; }; 
+template<> struct PObjType<std::string>        { typedef StrObject ot; };
+template<> struct PObjType<std::string&>       { typedef StrObject ot; }; 
+template<> struct PObjType<const std::string&> { typedef StrObject ot; }; 
 template<> struct PObjType<const char*>   { typedef StrObject ot; };
 template<> struct PObjType<char>          { typedef StrObject ot; };  // single character -> string
-template<> struct PObjType<wstring>        { typedef UnicodeObject ot; };
-template<> struct PObjType<wstring&>       { typedef UnicodeObject ot; };
-template<> struct PObjType<const wstring&> { typedef UnicodeObject ot; };
+template<> struct PObjType<std::wstring>        { typedef UnicodeObject ot; };
+template<> struct PObjType<std::wstring&>       { typedef UnicodeObject ot; };
+template<> struct PObjType<const std::wstring&> { typedef UnicodeObject ot; };
 template<> struct PObjType<const wchar_t*> { typedef UnicodeObject ot; };
 template<> struct PObjType<wchar_t>        { typedef UnicodeObject ot; };
 template<> struct PObjType<double> { typedef FloatObject ot; };
@@ -542,11 +540,11 @@ struct Extract {
     }
 };
 // some special cases are below
-template<> struct Extract<uint64> {
-    int64 operator()(const ObjRef& o) {
+template<> struct Extract<uint64_t> {
+    int64_t operator()(const ObjRef& o) {
         CHECK(!o.isNull(), "Extract from nullptr ref");
         o->checkType(Object::INT);
-        return *(uint64*)&static_cast<IntObject*>(o.get())->v;
+        return *(uint64_t*)&static_cast<IntObject*>(o.get())->v;
     }
 };
 template<> struct Extract<char> {
@@ -593,11 +591,11 @@ template<> struct Extract<double> {
     }
 };
 template<typename ET> // partial specialization for a uniform list of anything
-struct Extract<vector<ET> > {
-    vector<ET> operator()(const ObjRef& o) {
+struct Extract<std::vector<ET> > {
+    std::vector<ET> operator()(const ObjRef& o) {
         CHECK(!o.isNull(), "Extract from nullptr ref");
         auto lo = dynamic_pcast<ListObject>(o);
-        vector<ET> v;
+        std::vector<ET> v;
         for(auto it = lo->v.begin(); it != lo->v.end(); ++it) {
             v.push_back(Extract<ET>()(*it));
         }
@@ -607,14 +605,14 @@ struct Extract<vector<ET> > {
 
 // get a string pointer according to TC from an STR or USTR object
 template<typename TC>
-const basic_string<TC>* extractStrPtr(const ObjRef& o, StrModifier mod);
+const std::basic_string<TC>* extractStrPtr(const ObjRef& o, StrModifier mod);
 
 template<> 
-inline const string* extractStrPtr(const ObjRef& o, StrModifier mod) {
+inline const std::string* extractStrPtr(const ObjRef& o, StrModifier mod) {
     return checked_cast<StrObject>(o)->getStr(mod);
 }
 template<> 
-inline const wstring* extractStrPtr(const ObjRef& o, StrModifier mod) {
+inline const std::wstring* extractStrPtr(const ObjRef& o, StrModifier mod) {
     CHECK(!o.isNull(), "Extract from nullptr ref");
     if (o->type == Object::USTR) {
         return static_cast<UnicodeObject*>(o.get())->getWStr(mod);
@@ -626,8 +624,8 @@ inline const wstring* extractStrPtr(const ObjRef& o, StrModifier mod) {
 }
 
 // normal Extract using the above, to extract wstr to an str
-template<> struct Extract<wstring> {
-    wstring operator()(const ObjRef& o) {
+template<> struct Extract<std::wstring> {
+    std::wstring operator()(const ObjRef& o) {
         return *extractStrPtr<wchar_t>(o, STRMOD_NONE);
     }
 };
@@ -659,7 +657,7 @@ void GenericSubscriptable<T,ElemT>::setSubscr(const ObjRef& key, const ObjRef& v
 // --------------------------------------------------- complex types --------------------------------------------------
 
 
-int64 hashNum(const ObjRef& argref);
+int64_t hashNum(const ObjRef& argref);
 bool objEquals(const ObjRef& lhsref, const ObjRef& rhsref, PyVM* vm);
 
 struct ObjEquals {
@@ -691,7 +689,7 @@ struct DictObject : public Object, public ISubscriptable, public MapIterable<Dic
         return ref;
     }
 
-    unordered_map<ObjRef, ObjRef, decltype(hashNum)*, ObjEquals> v;
+    std::unordered_map<ObjRef, ObjRef, decltype(hashNum)*, ObjEquals> v;
 };
 
 typedef PoolPtr<DictObject> DictObjRef;
@@ -704,16 +702,16 @@ struct StrDictObject : public Object, public ISubscriptable, public MapIterable<
         v.clear(); // map clear
     }
     virtual void setSubscr(const ObjRef& key, const ObjRef& value) {
-        const string& sk = checked_cast<StrObject>(key)->v;
+        const std::string& sk = checked_cast<StrObject>(key)->v;
         v[sk] = value;
     }
     virtual ObjRef getSubscr(const ObjRef& key, PyVM*) {
-        const string& sk = checked_cast<StrObject>(key)->v;
+        const std::string& sk = checked_cast<StrObject>(key)->v;
         return v[sk];
     }
 
     virtual ObjRef pop(const ObjRef& key){
-        string strKey = Extract<string>()(key);
+        std::string strKey = Extract<std::string>()(key);
         ObjRef ref = v[strKey];
         v.erase(strKey);
         return ref;
@@ -791,7 +789,7 @@ struct FuncObject : public CallableObject {
         m_code.reset();
     }
     virtual ObjRef call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self);
-    virtual string funcname() const {
+    virtual std::string funcname() const {
         return m_code->m_co.co_name;
     }
 
@@ -806,8 +804,8 @@ struct ICWrap : public Object {
     ICWrap() : Object(CFUNC_WRAP) {}
     virtual int argsCount() = 0;
     virtual ObjRef call(CallArgs&) = 0;
-    virtual const string& name() = 0;
-    virtual void setName(const string& name) = 0;
+    virtual const std::string& name() = 0;
+    virtual void setName(const std::string& name) = 0;
 };
 
 typedef PoolPtr<ICWrap> ICWrapPtr;
@@ -815,8 +813,8 @@ typedef PoolPtr<ICWrap> ICWrapPtr;
 struct CFuncObject : public CallableObject {
     CFuncObject(const ICWrapPtr& cwrap) : CallableObject(FUNC, ModuleObjRef()), wrap(cwrap) {}
     virtual ObjRef call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self);
-    virtual string funcname() const {
-        return wrap.isNull() ? string("<nullptr-cfunc>") : wrap->name();
+    virtual std::string funcname() const {
+        return wrap.isNull() ? std::string("<nullptr-cfunc>") : wrap->name();
     }
     virtual void clear() {
         CallableObject::clear();
@@ -915,7 +913,7 @@ public:
         m_func.reset();
     }
     virtual ObjRef call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self);
-    virtual string funcname() const;
+    virtual std::string funcname() const;
 
     // turn an unbounded method (in a class) to a bound method
     PoolPtr<MethodObject> bind(const InstanceObjRef& newself);
@@ -932,12 +930,12 @@ typedef PoolPtr<MethodObject> MethodObjRef;
 class ClassObject : public CallableObject //, public IAttrable  
 {
 public:
-    ClassObject(const string& name, ModuleObjRef module, PyVM *vm)
+    ClassObject(const std::string& name, ModuleObjRef module, PyVM *vm)
         :CallableObject(CLASS, module, IATTRABLE), m_name(name), m_vm(vm)
     {}
     // called from instruction BUILD_CLASS
     // called from create wrapper class for a C++ class
-    ClassObject(const StrDictObjRef& methods, const vector<ObjRef>& bases, const string& name, ModuleObjRef module, PyVM *vm)
+    ClassObject(const StrDictObjRef& methods, const std::vector<ObjRef>& bases, const std::string& name, ModuleObjRef module, PyVM *vm)
         :CallableObject(CLASS, module, IATTRABLE), m_dict(methods), m_name(name), m_vm(vm) 
     {
         CHECK(bases.size() <= 1, "more that one base class not supported");
@@ -954,31 +952,31 @@ public:
 
    // void makeMethods(const InstanceObjRef& i);
     virtual ObjRef call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self);
-    virtual string funcname() const {
+    virtual std::string funcname() const {
         return m_name;
     }
 
-    ObjRef addMember(const ObjRef& o, const string& name) {
+    ObjRef addMember(const ObjRef& o, const std::string& name) {
         m_dict->v[name] = o;
         return o;
     }
 
     template<typename F>
-    ObjRef def(F func, const string& name) {
+    ObjRef def(F func, const std::string& name) {
         auto ic = makeCWrap(func, m_vm);
         ic->setName(name);
         auto calb = static_pcast<CallableObject>(m_vm->alloc(new CFuncObject(ic)));
         return addMember(m_vm->alloc(new MethodObject(calb, InstanceObjRef())), name);
     }
 
-    virtual ObjRef attr(const string& name);
-    virtual void setattr(const string& name, const ObjRef& o) {       
+    virtual ObjRef attr(const std::string& name);
+    virtual void setattr(const std::string& name, const ObjRef& o) {       
         m_dict->v[name] = o;
     }
 
-    string baseName() {
+    std::string baseName() {
         if (m_base.isNull())
-            return string();
+            return std::string();
         return m_base->m_name;
     }
 
@@ -999,7 +997,7 @@ public:
 public:
     StrDictObjRef m_dict;
     PoolPtr<ClassObject> m_base;
-    string m_name;
+    std::string m_name;
     PyVM *m_vm;
     PoolPtr<ICInstWrap> m_cwrap; // if it's a wrapper for a C++ object this will not be nullptr
 
@@ -1011,47 +1009,47 @@ typedef PoolPtr<ClassObject> ClassObjRef;
 class ModuleObject : public Object //, public IAttrable 
 {
 public:
-    ModuleObject(const string& name, PyVM *vm) : Object(MODULE, IATTRABLE), m_name(name), m_vm(vm) {}
+    ModuleObject(const std::string& name, PyVM *vm) : Object(MODULE, IATTRABLE), m_name(name), m_vm(vm) {}
     virtual void clear() {
         m_globals.clear(); // map clear
     }
 
-    ObjRef addGlobal(const ObjRef& o, const string& name) {
+    ObjRef addGlobal(const ObjRef& o, const std::string& name) {
         m_globals[name] = o;
         return o;
     }
-    ObjRef getGlobal(const string& name) {
+    ObjRef getGlobal(const std::string& name) {
         return lookup(m_globals, name);
     }
-    void delGlobal(const string& name) {
+    void delGlobal(const std::string& name) {
         m_globals.erase(name);
     }
 
-    virtual ObjRef attr(const string& name) {
+    virtual ObjRef attr(const std::string& name) {
          return tryLookup(m_globals, name);
     }
-    virtual void setattr(const string& name, const ObjRef& o) {
+    virtual void setattr(const std::string& name, const ObjRef& o) {
         m_globals[name] = o;
     }
 
-    ObjRef defIc(const string& name, const ICWrapPtr& ic);
+    ObjRef defIc(const std::string& name, const ICWrapPtr& ic);
 
     template<typename F>
-    ObjRef def(const string& name, F func) {
+    ObjRef def(const std::string& name, F func) {
         return defIc( name, makeCWrap(func, m_vm) );
     }
 
-    ClassObjRef emptyClass(const string& name);
+    ClassObjRef emptyClass(const std::string& name);
 
     template<typename C>
-    ClassObjRef class_(const string& name) {
+    ClassObjRef class_(const std::string& name) {
         ClassObjRef ret = emptyClass(name);
         ret->m_cwrap = m_vm->alloct<ICInstWrap>(new CInstWrapPtr<C>());
         return ret;
     }
 
     template<typename C, typename CT>
-    ClassObjRef class_(const string& name, CT ctorDef) {
+    ClassObjRef class_(const std::string& name, CT ctorDef) {
         ClassObjRef ret = class_<C>(name);
         ret->m_cwrap->m_ctor = m_vm->alloct<ICtorWrap>(new CtorWrap<C, typename CT::t1>());
         return ret;
@@ -1062,7 +1060,7 @@ public:
         forNameDict<ClassObject>(m_globals, func);
     }
 
-    string m_name;
+    std::string m_name;
     NameDict m_globals;
     PyVM *m_vm; // needed for implementation of shortcuts of object creations.
 };
@@ -1080,12 +1078,12 @@ public:
 
     virtual ~InstanceObject(){}
 
-    virtual ObjRef attr(const string& name);
-    virtual void setattr(const string& name, const ObjRef& o) {
+    virtual ObjRef attr(const std::string& name);
+    virtual void setattr(const std::string& name, const ObjRef& o) {
         m_dict[name] = o;
     }
     // attr without __getattr__ support
-    ObjRef simple_attr(const string& name);
+    ObjRef simple_attr(const std::string& name);
 
     ClassObjRef m_class;
     NameDict m_dict;
@@ -1157,7 +1155,7 @@ InstanceObjRef ClassObject::instanceValue(const T& v) {
 // wrapper that contains methods of primitive objects like string
 class PrimitiveAttrAdapter : public CallableObject {
 public:
-    PrimitiveAttrAdapter(ObjRef obj, const string& name, PyVM *vm)
+    PrimitiveAttrAdapter(ObjRef obj, const std::string& name, PyVM *vm)
         :CallableObject(PRIMITIVE_ADAPTER, ModuleObjRef()), m_obj(obj), m_name(name), m_vm(vm)
     {}
 
@@ -1167,8 +1165,8 @@ public:
     }
 
     virtual ObjRef call(Frame& from, Frame& frame, int posCount, int kwCount, const ObjRef& self);
-    virtual string funcname() const {
-        return string(m_obj->typeName()) + "." + m_name;
+    virtual std::string funcname() const {
+        return std::string(m_obj->typeName()) + "." + m_name;
     }
 
     static bool adaptedType(Type t) {
@@ -1180,7 +1178,7 @@ public:
     }
 
     ObjRef m_obj;
-    string m_name;
+    std::string m_name;
     PyVM *m_vm; // for object creation
 
 private:
@@ -1200,10 +1198,10 @@ private:
 class Builtins : public ModuleObject {
 public:
     Builtins(PyVM* vm);
-    ObjRef get(const string& name);
-    void add(const string& name, const ObjRef& v);
+    ObjRef get(const std::string& name);
+    void add(const std::string& name, const ObjRef& v);
 private:
-    ObjRef create(const string& name);
+    ObjRef create(const std::string& name);
 };
 
 
@@ -1219,7 +1217,7 @@ public:
         m_f.localsFromStack(from, self, posCount, kwCount);
         return ObjRef(this);
     }
-    virtual string funcname() const {
+    virtual std::string funcname() const {
         return "generator";
     }
     virtual ObjRef iter(PyVM* _vm) {
@@ -1295,7 +1293,7 @@ ObjRef PyVM::makeTuple(const A1& a1, const A2& a2) {
 }
 
 template<typename T> // T should be some ObjRef
-void PyVM::addBuiltin(const string& name, const PoolPtr<T>& v) {
+void PyVM::addBuiltin(const std::string& name, const PoolPtr<T>& v) {
     m_builtins->add(name, ObjRef(v) );
 }
 

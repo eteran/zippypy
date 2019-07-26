@@ -21,13 +21,13 @@ struct CWrap : public ICWrap {
     }
 
     virtual int argsCount() { return Acount; }
-    virtual const string& name() { return m_name; }
-    virtual void setName(const string& name) {
+    virtual const std::string& name() { return m_name; }
+    virtual void setName(const std::string& name) {
         m_name = name;
     }
 
     TL m_f; // the lambda function
-    string m_name;
+    std::string m_name;
 };
 
 // take a callable object that has argument (vector<ObjRef>& args), make an ICWrap* of it
@@ -140,21 +140,21 @@ inline ICWrapPtr makeCWrap( ObjRef(*f)(CallArgs&, PyVM*), PyVM* vm) {
 }
 
 template<>
-inline ICWrapPtr makeCWrap( ObjRef(*f)(const vector<ObjRef>&), PyVM* vm) {
+inline ICWrapPtr makeCWrap( ObjRef(*f)(const std::vector<ObjRef>&), PyVM* vm) {
     return makeWrap<-1>(vm, [=](CallArgs& args)->ObjRef {
         args.posReverse();
         // need to copy it to a real vector
-        vector<ObjRef> argsCopy(args.pos.begin(), args.pos.end());
+        std::vector<ObjRef> argsCopy(args.pos.begin(), args.pos.end());
         ObjRef ret = f(argsCopy);
         return ret;
     });
 }
 
-inline ICWrapPtr makeCWrap(std::function<ObjRef(const vector<ObjRef>&, PyVM*)> f, PyVM* vm) {
+inline ICWrapPtr makeCWrap(std::function<ObjRef(const std::vector<ObjRef>&, PyVM*)> f, PyVM* vm) {
     return makeWrap<-1>(vm, [=](CallArgs& args)->ObjRef {
         args.posReverse();
         // need to copy it to a real vector
-        vector<ObjRef> argsCopy(args.pos.begin(), args.pos.end());
+        std::vector<ObjRef> argsCopy(args.pos.begin(), args.pos.end());
         ObjRef ret = f(argsCopy, vm);
         return ret;
     });
@@ -217,13 +217,13 @@ ICWrapPtr makeCWrap(void(C::*f)(As...), PyVM* vm) {
 
 // class C return R and take a vector of ObjRef
 template<typename C, typename R>
-ICWrapPtr makeCWrap( R(C::*f)(const vector<ObjRef>&), PyVM* vm) {
+ICWrapPtr makeCWrap( R(C::*f)(const std::vector<ObjRef>&), PyVM* vm) {
     return makeWrap<-1>(vm, [=](CallArgs& args)->ObjRef {
         CHECK(args.pos.size() >= 1, "No self argument");
         C* self = extractCInst<C>(args.pos.back()); // self is the last argument.
         args.pos.pop_back();
         args.posReverse();
-        vector<ObjRef> argsCopy(args.pos.begin(), args.pos.end());
+        std::vector<ObjRef> argsCopy(args.pos.begin(), args.pos.end());
         R ret = (self->*f)(argsCopy);
         return vm->makeFromT<R>(ret);
     });
@@ -231,13 +231,13 @@ ICWrapPtr makeCWrap( R(C::*f)(const vector<ObjRef>&), PyVM* vm) {
 
 // class C return void and take a vector of ObjRef
 template<typename C>
-ICWrapPtr makeCWrap( void(C::*f)(const vector<ObjRef>&), PyVM* vm) {
+ICWrapPtr makeCWrap( void(C::*f)(const std::vector<ObjRef>&), PyVM* vm) {
     return makeWrap<-1>(vm, [=](CallArgs& args)->ObjRef {
         CHECK(args.pos.size() >= 1, "No self argument");
         C* self = extractCInst<C>(args.pos.back()); // self is the last argument.
         args.pos.pop_back();
         args.posReverse();
-        vector<ObjRef> argsCopy(args.pos.begin(), args.pos.end());
+        std::vector<ObjRef> argsCopy(args.pos.begin(), args.pos.end());
         (self->*f)(argsCopy);
         return vm->makeNone();
     });
