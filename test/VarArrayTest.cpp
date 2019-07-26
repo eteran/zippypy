@@ -8,18 +8,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include "myTest.h"
 
-#include "../src/VarArray.h"
+#include "PyVM/VarArray.h"
 #include <vector>
 #include <memory>
 
-using namespace std;
-
-
 TEST(VarArray, realloc_movedCorrectly)
 {
-    VarArray<string, 3> v;
+	VarArray<std::string, 3> v;
     v.push_back("aa");
     v.push_back("bb");
     ASSERT_EQ(2, v.size());
@@ -44,11 +42,12 @@ TEST(VarArray, realloc_movedCorrectly)
 }
 
 template<typename T, typename FT>
-vector<T> toVector(const FT& from) {
-    vector<T> r;
+std::vector<T> toVector(const FT& from) {
+	std::vector<T> r;
     from.foreach([&](const T& v) { r.push_back(v); });
     return r;
 }
+
 template<typename FT>
 void addValues(FT& to, int count) {
     for (int i = 0; i < count; ++i)
@@ -57,13 +56,13 @@ void addValues(FT& to, int count) {
 
 TEST(VarArray, popBackRealloc_movedCorrectly)
 {
-    VarArray<string, 3> v;
+	VarArray<std::string, 3> v;
     addValues(v, 5);
     v.pop_back();
     v.pop_back();
     v.pop_back();
     ASSERT_EQ(2, v.size());
-    ASSERT_THAT(toVector<string>(v), ElementsAre("0", "1"));
+	ASSERT_THAT(toVector<std::string>(v), ElementsAre("0", "1"));
     v.pop_back();
     v.pop_back();
     ASSERT_EQ(0, v.size());
@@ -74,33 +73,33 @@ TEST(VarArray, popBackRealloc_movedCorrectly)
     v.pop_back();
     v.pop_back();
     v.pop_back();
-    ASSERT_THAT(toVector<string>(v), ElementsAre("0", "1", "2", "3", "4"));
+	ASSERT_THAT(toVector<std::string>(v), ElementsAre("0", "1", "2", "3", "4"));
 }
 
 TEST(VarArray, insert_movedCorrectly)
 {
-    VarArray<string, 3> v;
+	VarArray<std::string, 3> v;
     v.push_back("1");
     v.push_back("2");
     v.insert(v.begin(), "000");
     ASSERT_EQ(3, v.size());
-    ASSERT_THAT(toVector<string>(v), ElementsAre("000", "1", "2"));
+	ASSERT_THAT(toVector<std::string>(v), ElementsAre("000", "1", "2"));
 
     v.insert(v.begin() + 2, "333");
     v.insert(v.end(), "444");
     ASSERT_EQ(5, v.size());
-    ASSERT_THAT(toVector<string>(v), ElementsAre("000", "1", "333", "2", "444"));
+	ASSERT_THAT(toVector<std::string>(v), ElementsAre("000", "1", "333", "2", "444"));
 }
 
 TEST(VarArray, iterators)
 {
-    VarArray<string, 3> v;
+	VarArray<std::string, 3> v;
     v.push_back("1");
     v.push_back("2");
     v.insert(v.begin(), "000");
     ASSERT_THAT(v, ElementsAre("000", "1", "2"));
 
-    vector<string> tmp;
+	std::vector<std::string> tmp;
     for (auto it = v.begin(); it != v.end(); ++it) {
         tmp.push_back(*it);
     }
@@ -108,7 +107,7 @@ TEST(VarArray, iterators)
     tmp.clear();
 
     // const iterators
-    const VarArray<string, 3>& constV = v;
+	const VarArray<std::string, 3>& constV = v;
     v.push_back("4");
     ASSERT_THAT(v, ElementsAre("000", "1", "2", "4"));
     for (auto it = constV.begin(); it != constV.end(); ++it) {
@@ -121,7 +120,7 @@ TEST(VarArray, iterators)
     ASSERT_THAT(v, ElementsAre("4", "2", "1", "000"));
 
     // copy via c'tor
-    vector<string> vCopy(v.begin(), v.end());
+	std::vector<std::string> vCopy(v.begin(), v.end());
     ASSERT_THAT(vCopy, ElementsAre("4", "2", "1", "000"));
 }
 
@@ -129,26 +128,32 @@ TEST(VarArray, iterators)
 
 class TestObj {
 public:
-    TestObj() :m_x(0) {
+	TestObj() {
         ++s_ctorEmpty;
     }
-    explicit TestObj(int x) :m_x(x){
+
+	explicit TestObj(int x) :m_x(x){
         ++s_ctorInit;
     }
-    TestObj(const TestObj& t) :m_x(t.m_x) {
+
+	TestObj(const TestObj& t) :m_x(t.m_x) {
         ++s_ctorCopy;
     }
-    ~TestObj() {
+
+	~TestObj() {
         ++s_dtors;
     }
-    int m_x;
+
+	int m_x = 0;
 
     static void zeroCounts() {
-        s_ctorEmpty = 0; s_ctorCopy = 0; s_dtors = 0, s_ctorInit = 0;
+		s_ctorEmpty = 0; s_ctorCopy = 0; s_dtors = 0; s_ctorInit = 0;
     }
+
     static int aliveObjects() {
         return s_ctorEmpty + s_ctorCopy + s_ctorInit - s_dtors;
     }
+
     static int s_ctorEmpty, s_ctorCopy, s_dtors, s_ctorInit;
 };
 int TestObj::s_ctorEmpty = 0, TestObj::s_ctorCopy = 0, TestObj::s_dtors = 0, TestObj::s_ctorInit = 0;
@@ -227,7 +232,7 @@ TEST(VarArray, resize_objectsDestroyed)
 }
 
 
-typedef std::shared_ptr<string> str_ptr;
+using str_ptr = std::shared_ptr<std::string>;
 
 TEST(VarArray, insert_allDestroyed)
 {
@@ -243,21 +248,22 @@ TEST(VarArray, insert_allDestroyed)
     }
 
     VarArray<str_ptr, 3> v;
-    v.push_back(str_ptr(new string("11")));
-    v.push_back(str_ptr(new string("22")));
-    v.insert(v.begin() + 1, str_ptr(new string("000")));
-    v.foreach([](const str_ptr& p) {
-        ASSERT_EQ(p.use_count(), 1);
-    });
-    v.insert(v.begin() + 1, str_ptr(new string("333")));
-    v.insert(v.end(), str_ptr(new string("444")));
+	v.push_back(std::make_shared<std::string>("11"));
+	v.push_back(std::make_shared<std::string>("22"));
+	v.insert(v.begin() + 1, std::make_shared<std::string>("000"));
     v.foreach([](const str_ptr& p) {
         ASSERT_EQ(p.use_count(), 1);
     });
 
-    v.insert(v.end() - 1, str_ptr(new string("555")));
-    v.insert(v.end() - 1, str_ptr(new string("666")));
-    v.insert(v.end() - 1, str_ptr(new string("777")));
+	v.insert(v.begin() + 1, std::make_shared<std::string>("333"));
+	v.insert(v.end(), std::make_shared<std::string>("444"));
+    v.foreach([](const str_ptr& p) {
+        ASSERT_EQ(p.use_count(), 1);
+    });
+
+	v.insert(v.end() - 1, std::make_shared<std::string>("555"));
+	v.insert(v.end() - 1, std::make_shared<std::string>("666"));
+	v.insert(v.end() - 1, std::make_shared<std::string>("777"));
 
     v.foreach([](const str_ptr& p) {
         ASSERT_EQ(p.use_count(), 1);

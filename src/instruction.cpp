@@ -9,13 +9,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "OpImp.h"
-#include "PyVM.h"
-#include "defs.h"
-#include "log.h"
-#include "objects.h"
-#include "opcodes.h"
-#include "utils.h"
+#include "PyVM/OpImp.h"
+#include "PyVM/PyVM.h"
+#include "PyVM/defs.h"
+#include "PyVM/log.h"
+#include "PyVM/objects.h"
+#include "PyVM/opcodes.h"
+#include "PyVM/utils.h"
 
 #include <cmath>
 #include <sstream>

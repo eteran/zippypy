@@ -8,7 +8,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #pragma once
+
 #include "except.h"
 #include "defs.h"
 #include "log.h"
@@ -108,6 +110,7 @@ template<typename U, typename T>
 PoolPtr<U> static_pcast(const PoolPtr<T>& o) {
     return PoolPtr<U>(static_cast<U*>(o.get()));
 }
+
 template<typename U, typename T>
 PoolPtr<U> dynamic_pcast(const PoolPtr<T>& o) {
     return PoolPtr<U>(dynamic_cast<U*>(o.get()));
@@ -118,13 +121,14 @@ PoolPtr<U> dynamic_pcast(const PoolPtr<T>& o) {
 template<typename T>
 class DList {
 private:
-    T *m_head, *m_tail;
-    int m_size;
+	T *m_head = nullptr;
+	T *m_tail = nullptr;
+	int m_size = 0;
 
 public:
     struct Entry {
-        Entry() : next(nullptr), prev(nullptr) {}
-        T *next, *prev;
+		T *next = nullptr;
+		T *prev = nullptr;
     };
 
     struct iterator {
@@ -140,20 +144,22 @@ public:
         T* ptr;
     };
 
-    DList() : m_head(nullptr), m_tail(nullptr), m_size(0) {
+	DList() {
         // two dummy nodes that are always there.
         m_head = new T();
         m_tail = new T();
         m_head->count.ent.next = m_tail;
         m_tail->count.ent.prev = m_head;
     }
-    ~DList() {
+
+	~DList() {
         if (m_size != 0) {
             LOG_ERROR("Object pool not empty. size=", m_size, " global objects?");
         }
         delete m_head;
         delete m_tail;
     }
+
     // push at head
     void push_front(T* v) { 
         Entry* n = &v->count.ent;// new Entry(m_head, v, m_head->next);
@@ -163,13 +169,16 @@ public:
         m_head->count.ent.next = v;
         ++m_size;
     }
+
     iterator begin() {
         return iterator(m_head->count.ent.next);
     }
-    iterator end() {
+
+	iterator end() {
         return iterator(m_tail); // one after last
     }
-    void erase(T* v) {
+
+	void erase(T* v) {
         if (v == nullptr)
             return;
         CHECK(v != m_head && v != m_tail, "Unexpected state DList");
@@ -178,7 +187,8 @@ public:
         e->prev->count.ent.next = e->next;
         --m_size;
     }
-    int size() const {
+
+	int size() const {
         return m_size;
     }
 };
@@ -223,14 +233,6 @@ public:
         delete v;
         m_hadRemove = true;
     }
-
- /*   void printObjCntIfNeeded(){
-        uint64_t currentMsec = os::OSUtils::msecTimeFast();
-        if ((currentMsec - m_lastTimePrintedObjCount) > OBJ_CNT_PRINT_DELTA_MS){
-            LOG_DEBUG("There are ", m_objs.size(), " objects in pyvm object pool");
-            m_lastTimePrintedObjCount = currentMsec;
-        }
-    }*/
 
     template<typename F>
     bool foreach(const F& f) {
@@ -283,7 +285,5 @@ public:
 private:
     DList<T> m_objs;
 	bool m_hadRemove = false; // used in gradForeach
-    //uint64_t m_lastTimePrintedObjCount;
-
 };
 

@@ -8,6 +8,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #pragma once
 #include "defs.h"
 
@@ -53,5 +54,5 @@ enum EPyOperators {
 	OPER_NOT_IN     = 7,
 	OPER_IS         = 8,
 	OPER_IS_NOT     = 9,
-	OPER_EXP_MATCH  = 10
+	OPER_EXP_MATCH  = 10,
 };

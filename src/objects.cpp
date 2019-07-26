@@ -11,9 +11,9 @@
 
 #pragma warning(disable : 4996) // copy unsafe
 
-#include "OpImp.h"
-#include "PyVM.h"
-#include "objects.h"
+#include "PyVM/OpImp.h"
+#include "PyVM/PyVM.h"
+#include "PyVM/objects.h"
 
 #include <cstring>
 
@@ -214,8 +214,8 @@ int toSlash(int c) {
 }
 template <typename T, typename TOp>
 static T transformed(const T &str, TOp &op) {
-	T ret = str;
-	transform(ret.begin(), ret.end(), ret.begin(), op);
+	T ret;
+	transform(str.begin(), str.end(), std::back_inserter(ret), op);
 	return ret;
 }
 
@@ -323,7 +323,7 @@ static ObjRef join(const ObjRef &s, const CallArgs::TPosVector &args, PyVM *vm) 
 // the custom build step that generates this file is currently only generated in the windows build since there is still no scons rule for it
 // this is why "gen_string_method_names.h" is in source control.
 // after re-generating this file, make sure you commit the change in the genrated file as well.
-#include "gen_string_method_names.h"
+#include "PyVM/gen_string_method_names.h"
 
 template <typename TC>
 ObjRef PrimitiveAttrAdapter::stringMethod(const ObjRef &obj, const CallArgs::TPosVector &args) {
@@ -445,6 +445,9 @@ ObjRef PrimitiveAttrAdapter::dictMethod(const ObjRef &obj, CallArgs::TPosVector 
 }
 
 ObjRef PrimitiveAttrAdapter::call(Frame &from, Frame &frame, int posCount, int kwCount, const ObjRef &self) {
+
+	(void)self;
+
 	CallArgs args;
 	frame.argsFromStack(from, posCount, kwCount, args);
 

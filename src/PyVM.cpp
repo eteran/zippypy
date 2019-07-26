@@ -9,11 +9,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "PyCompile.h"
-#include "PyVM.h"
-#include "log.h"
-#include "objects.h"
-#include "utils.h"
+#include "PyVM/PyCompile.h"
+#include "PyVM/PyVM.h"
+#include "PyVM/log.h"
+#include "PyVM/objects.h"
+#include "PyVM/utils.h"
 
 #include <fstream>
 #include <sstream>

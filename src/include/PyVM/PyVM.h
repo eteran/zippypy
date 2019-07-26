@@ -240,9 +240,10 @@ public:
 	ObjRef alloc(Object *o) {
 		return m_alloc.add(o);
 	}
+
 	template <typename T>
 	PoolPtr<T> alloct(T *t) {
-		Object *o = static_cast<Object *>(t);
+		Object *o = t;
 		ObjRef  r = m_alloc.add(o);
 		return static_pcast<T>(r);
 	}

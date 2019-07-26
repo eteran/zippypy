@@ -116,7 +116,7 @@ public:
 	}
 
 	template <typename F>
-	void foreach (F &f) const {
+	void foreach (F &&f) const {
 		for (int i = 0; i < m_size; ++i) {
 			f(m_ptr[i]);
 		}

@@ -10,29 +10,25 @@
 // limitations under the License.
 #include "myTest.h"
 
-#include "../src/ObjPool.h"
-#include "../src/objects.h"
-#include "../src/BufferAccess.h"
+#include "PyVM/ObjPool.h"
+#include "PyVM/objects.h"
+#include "PyVM/BufferAccess.h"
 
 #include <iostream>
 #include <fstream>
 
-vector<Test*> Test::s_allTests;
-
-using namespace std;
-
 #define EXPECT_NO_THROW_PYS( call ) try { call; } \
-    catch(const PyException& e) { cout << "*** EXCEPTION: " << e.trackback << "\n" << e.what() << endl;  FAIL(); } \
-    catch(...) { cout << "unknown exception" << endl; FAIL(); }
+	catch(const PyException& e) { std::cout << "*** EXCEPTION: " << e.trackback << "\n" << e.what() << std::endl;  FAIL(); } \
+	catch(...) { std::cout << "unknown exception" << std::endl; FAIL(); }
 
 
 
 class TestObject {
 public:
-    TestObject() : m_x(0) {}
+	TestObject() = default;
     TestObject(int x) : m_x(x) {}
     RefCount<TestObject> count;
-    int m_x;
+	int m_x = 0;
 };
 
 
@@ -97,46 +93,46 @@ public:
 
     static std::shared_ptr<PyVM> vm;
     static ModuleObjRef mod;
-    static string s_path;
+	static std::string s_path;
    // static Interpreter s_interp;  // CPython interpreter initialized for bridge testing
 };
 
 std::shared_ptr<PyVM> PyVMTest::vm;
 ModuleObjRef PyVMTest::mod;
-string PyVMTest::s_path;
+std::string PyVMTest::s_path;
 //Interpreter PyVMTest::s_interp;
 //Interpreter* g_interp = &PyVMTest::s_interp;
 
 int ctest0() {
-    cout << "C0" << endl;
+	std::cout << "C0" << std::endl;
     return 1;
 }
 
 // 3 arguments with return value
-bool ctest1(int a, bool b, const string& c) {
-    cout << "C a=" << a << " b=" << b << " c=" << c << endl;
+bool ctest1(int a, bool b, const std::string& c) {
+	std::cout << "C a=" << a << " b=" << b << " c=" << c << std::endl;
     return false;
 }
 
-void ctest2(int a, const string& c) {
-    cout << "C a=" << a << " c=" << c << endl;
+void ctest2(int a, const std::string& c) {
+	std::cout << "C a=" << a << " c=" << c << std::endl;
 }
 
-string ctest3(int a, string b) {
-    cout << "C a=" << a << " b=" << b << endl;
+std::string ctest3(int a, std::string b) {
+	std::cout << "C a=" << a << " b=" << b << std::endl;
     return "XX";
 }
 
-void ctest4(float f, const wstring& wa) {
-    cout << "C f=" << f << " wa=" << ansiFromwstr(wa) << endl;
+void ctest4(float f, const std::wstring& wa) {
+	std::cout << "C f=" << f << " wa=" << ansiFromwstr(wa) << std::endl;
 }
 
-void ctest5(const vector<ObjRef>& v) {
-    cout << "C v5=" << v.size() << endl;
+void ctest5(const std::vector<ObjRef>& v) {
+	std::cout << "C v5=" << v.size() << std::endl;
 }
 
-void ctest6(const vector<int>& v) {
-    cout << "C v6=" << v.size() << endl;
+void ctest6(const std::vector<int>& v) {
+	std::cout << "C v6=" << v.size() << std::endl;
 }
 
 
@@ -159,27 +155,31 @@ TEST_F(PyVMTest, calling_c_func) {
 
 class TestCClass {
 public:
-    TestCClass(const string& id) :m_id(id) {}
-    void cmethod1(const string& a) {
-        cout << "Method1 this=" << (size_t)this << " " << m_id << " a=" << a << endl;
-    }
-    int cmethod2() {
-        cout << "Method2 this=" << (size_t)this << " " << m_id << endl;
-        return 2;
-    }
-    bool cmethod3(int a, bool b, const string& c) {
-        cout << "Method3 a=" << a << " b=" << b << " c=" << c << " " << m_id << endl;
-        return false;
-    }
-    int cmethod4(int a, bool b) {
-        cout << "Method4 a=" << a << " b=" << b << " " << m_id << endl;
-        return 42;
-    }
-    void cmethod5(int a, string b, bool c) {
-        cout << "Method5 a=" << a << " b=" << b << " c=" << c << " " << m_id << endl;
+	TestCClass(const std::string& id) :m_id(id) {}
+	void cmethod1(const std::string& a) {
+		std::cout << "Method1 this=" << (size_t)this << " " << m_id << " a=" << a << std::endl;
     }
 
-    string m_id;
+    int cmethod2() {
+		std::cout << "Method2 this=" << (size_t)this << " " << m_id << std::endl;
+        return 2;
+    }
+
+	bool cmethod3(int a, bool b, const std::string& c) {
+		std::cout << "Method3 a=" << a << " b=" << b << " c=" << c << " " << m_id << std::endl;
+        return false;
+    }
+
+	int cmethod4(int a, bool b) {
+		std::cout << "Method4 a=" << a << " b=" << b << " " << m_id << std::endl;
+        return 42;
+    }
+
+	void cmethod5(int a, std::string b, bool c) {
+		std::cout << "Method5 a=" << a << " b=" << b << " c=" << c << " " << m_id << std::endl;
+    }
+
+	std::string m_id;
 };
 
 TEST_F(PyVMTest, calling_cpp_method) {
@@ -255,7 +255,7 @@ TEST_F(PyVMTest, builtin_types_and_funcs)
 
 ObjRef cfunc_kwa(CallArgs& d, PyVM* vm) {
     for(auto it = d.kw.begin(); it != d.kw.end(); ++it) {
-        cout << it->first << " = " << stdstr(it->second, false) << endl;
+		std::cout << it->first << " = " << stdstr(it->second, false) << std::endl;
     }
     return vm->makeNone();
 }
@@ -268,15 +268,15 @@ TEST_F(PyVMTest, call_c_kw) {
 }
 
 struct VarArgClass {
-    string varArgFunc(const vector<ObjRef>& args) {
-        stringstream ss;
-        cout << args.size() << " ";
+	std::string varArgFunc(const std::vector<ObjRef>& args) {
+		std::stringstream ss;
+		std::cout << args.size() << " ";
         ss << args.size() << " ";
         for(auto it = args.begin(); it != args.end(); ++it) {
-            cout << stdstr(*it) << " ";
+			std::cout << stdstr(*it) << " ";
             ss << stdstr(*it) << " ";
         }
-        cout << endl;
+		std::cout << std::endl;
         return ss.str();
     }
 };
@@ -302,12 +302,12 @@ TEST_F(PyVMTest, callFuncWithVarPosArgs_calledSuccessfully) {
 }
 
 struct SomeClass {
-    SomeClass(const string& _x) : x(_x) {}
-    string x;
+	SomeClass(const std::string& _x) : x(_x) {}
+	std::string x;
 };
 
-void external_method(SomeClass* self, int arg1, const string& arg2) {
-    cout << "in external_method " << self->x << " " << arg1 << " " << arg2 << endl;
+void external_method(SomeClass* self, int arg1, const std::string& arg2) {
+	std::cout << "in external_method " << self->x << " " << arg1 << " " << arg2 << std::endl;
 }
 
 TEST_F(PyVMTest, method_as_c_function) {
@@ -341,47 +341,47 @@ TEST_F(PyVMTest, numbers_conversion)
     n = vm->call("test_module.checkNumber", 1, 0); //HKEY_LOCAL_MACHINE
     EXPECT_EQ(extract<int>(n), (int)0x80000002);
 
-    EXPECT_EQ(extract<int64>(n), (int64)HKLM_SIGNED_VAL); 
+	EXPECT_EQ(extract<int64_t>(n), (int64_t)HKLM_SIGNED_VAL);
 
     EXPECT_EQ(extract<uint>(n), (uint)0x80000002);
-    int64 c = extract<uint64>(n), d = (uint64)0x80000002;
+	int64_t c = extract<uint64_t>(n), d = (uint64_t)0x80000002;
 
-    uint64 a = extract<uint64>(n);
-    uint64 b = (uint64)HKLM_SIGNED_VAL;
+	uint64_t a = extract<uint64_t>(n);
+	uint64_t b = (uint64_t)HKLM_SIGNED_VAL;
 
-    EXPECT_EQ(extract<uint64>(n), (uint64)HKLM_SIGNED_VAL);
+	EXPECT_EQ(extract<uint64_t>(n), (uint64_t)HKLM_SIGNED_VAL);
 
     n = vm->call("test_module.checkNumber", 2, 0); 
-    EXPECT_EQ(extract<uint64>(n), 0x100000000);
+	EXPECT_EQ(extract<uint64_t>(n), 0x100000000);
 
     n = vm->call("test_module.checkNumber", 3, 0); 
-    EXPECT_EQ(extract<uint64>(n), 0x7F00000000000000);
+	EXPECT_EQ(extract<uint64_t>(n), 0x7F00000000000000);
 
     n = vm->call("test_module.checkNumber", 4, 0); 
-    EXPECT_EQ(extract<uint64>(n), 0xAF00000000000000);
+	EXPECT_EQ(extract<uint64_t>(n), 0xAF00000000000000);
 
     EXPECT_NO_THROW( vm->call("test_module.checkNumber", 11, (int)HKLM_SIGNED_VAL) ); 
-    EXPECT_NO_THROW( vm->call("test_module.checkNumber", 11, (int64)HKLM_SIGNED_VAL) ); 
+	EXPECT_NO_THROW( vm->call("test_module.checkNumber", 11, (int64_t)HKLM_SIGNED_VAL) );
 
-    EXPECT_NO_THROW( vm->call("test_module.checkNumber", 12, (int64)0x100000000) ); 
-    EXPECT_NO_THROW( vm->call("test_module.checkNumber", 12, (uint64)0x100000000) ); 
+	EXPECT_NO_THROW( vm->call("test_module.checkNumber", 12, (int64_t)0x100000000) );
+	EXPECT_NO_THROW( vm->call("test_module.checkNumber", 12, (uint64_t)0x100000000) );
 
-    EXPECT_NO_THROW( vm->call("test_module.checkNumber", 13, (int64)0x7F00000000000000) ); 
-    EXPECT_NO_THROW( vm->call("test_module.checkNumber", 13, (uint64)0x7F00000000000000) ); 
+	EXPECT_NO_THROW( vm->call("test_module.checkNumber", 13, (int64_t)0x7F00000000000000) );
+	EXPECT_NO_THROW( vm->call("test_module.checkNumber", 13, (uint64_t)0x7F00000000000000) );
 
-    EXPECT_NO_THROW( vm->call("test_module.checkNumber", 14, (uint64)0xAF00000000000000) ); 
+	EXPECT_NO_THROW( vm->call("test_module.checkNumber", 14, (uint64_t)0xAF00000000000000) );
 
 
 }
 
-size_t g_got_v = 0;
+static size_t g_got_v = 0;
 void charArrCall(size_t v) {
     // check array
     g_got_v = v;
 }
 
 template<typename T>
-T extractInt(const string& s, int start) {
+T extractInt(const std::string& s, int start) {
     CHECK(s.size() >= start + sizeof(T), "Unexpected string offset");
     return *(T*)(s.data() + start);
 }
@@ -389,29 +389,29 @@ T extractInt(const string& s, int start) {
 
 TEST_F(PyVMTest, AccessBuffer_usecases) {
     try {
-        char *envp[] = {"HellO", "CrueL", "WorlD", 0 };
+		char *envp[] = {"HellO", "CrueL", "WorlD", nullptr };
 
         vm->addBuiltin(AccessBuffer::addToModule(vm->mainModule()));
         vm->addBuiltin(BufferBuilder::addToModule(vm->mainModule()));
         vm->addBuiltin("charArrCall", vm->mainModule()->def("charArrCall", charArrCall));
         vm->call("test_module.parseCharArray", (size_t)envp); // calls charArrCall
-        EXPECT_EQ((char**)g_got_v, envp); // pointer received by the callback should be the same as envp
+		EXPECT_EQ((char**)g_got_v, envp); // pointer received by the callback should be the same as envp
 
-        string buf;
+		std::string buf;
         buf.resize(15);
         EXPECT_NO_THROW( vm->call("test_module.testAccessBuf", buf) ); 
 
         ObjRef a(vm->alloc(new StrObject("aaa"))), b(vm->alloc(new StrObject("bbb"))), c(vm->alloc(new StrObject("ccc")));
         ObjRef r = vm->call("test_module.testBuildBuf", a, b, c);
-        string rs = extract<string>(r);
-        EXPECT_EQ(rs.size(), 3*sizeof(void*) + sizeof(uint64) + sizeof(uint) + sizeof(char)); // should be an array of pointers to the strings
+		std::string rs = extract<std::string>(r);
+		EXPECT_EQ(rs.size(), 3*sizeof(void*) + sizeof(uint64_t) + sizeof(uint) + sizeof(char)); // should be an array of pointers to the strings
         char** rsp = (char**)rs.data();
         EXPECT_EQ(rsp[0], ((StrObjRef&)a)->v.data());
         EXPECT_EQ(rsp[1], ((StrObjRef&)b)->v.data());
         EXPECT_EQ(rsp[2], ((StrObjRef&)c)->v.data());
-        EXPECT_EQ(88888, extractInt<uint64>(rs, 3*sizeof(void*) ));
-        EXPECT_EQ(666,   extractInt<uint>(rs, 3*sizeof(void*) + sizeof(uint64)));
-        EXPECT_EQ(111,   extractInt<char>(rs, 3*sizeof(void*) + sizeof(uint64) + sizeof(uint)));
+		EXPECT_EQ(88888, extractInt<uint64_t>(rs, 3*sizeof(void*) ));
+		EXPECT_EQ(666,   extractInt<uint>(rs, 3*sizeof(void*) + sizeof(uint64_t)));
+		EXPECT_EQ(111,   extractInt<char>(rs, 3*sizeof(void*) + sizeof(uint64_t) + sizeof(uint)));
 
         int argc = 4;
         char* argv[4] = { "HellO", "WORLD", "TeST", "this" };
@@ -428,7 +428,7 @@ TEST_F(PyVMTest, AccessBuffer_usecases) {
     }
     catch(const PyException& e) {
         FAIL();
-        cout << "EXCEPTION: " << e.what() << endl << e.trackback << endl;
+		std::cout << "EXCEPTION: " << e.what() << std::endl << e.trackback << std::endl;
     }
 }
 
@@ -441,7 +441,7 @@ TEST_F(PyVMTest, StateClearer_saves_state) {
         StateClearer sc(vm.get());
         vm->call("test_module.testMem", false);
     }
-    cout << "BEFORE " << refs << " " << objCount << " AFTER " << vm->objPool().countRefs() << " " << vm->objPool().size() << endl;
+	std::cout << "BEFORE " << refs << " " << objCount << " AFTER " << vm->objPool().countRefs() << " " << vm->objPool().size() << std::endl;
 
     EXPECT_EQ(vm->objPool().countRefs(), refs);
     EXPECT_EQ(vm->objPool().size(), objCount);
@@ -454,7 +454,7 @@ TEST_F(PyVMTest, StateClearer_on_leak) {
         StateClearer sc(vm.get());
         vm->call("test_module.testMem", true); // leak a reference to a global variable
     }
-    cout << "BEFORE " << refs << " " << objCount << " AFTER " << vm->objPool().countRefs() << " " << vm->objPool().size() << endl;
+	std::cout << "BEFORE " << refs << " " << objCount << " AFTER " << vm->objPool().countRefs() << " " << vm->objPool().size() << std::endl;
 
 //     stringstream ss;
 //     vm->memDump(ss);
@@ -508,7 +508,7 @@ TEST_F(PyVMTest, CInstanceInitFromCUsedByPy_NoLeak){
     {      
         auto classObj = mod->class_<CClass2>("CClass2", CtorDef<NoType>());
         classObj->def(&CClass2::getSomething, "getSomething");		
-        std::shared_ptr<CClass2> cObj(new CClass2(vm.get()));
+		auto cObj = std::make_shared<CClass2>(vm.get());
         auto ref = classObj->instanceSharedPtr(cObj);
         vm->call("test_module.useCObject",ref);
     }
@@ -520,20 +520,20 @@ TEST_F(PyVMTest, CInstanceInitFromCUsedByPy_NoLeak){
 
 class CClass3 {
 public:
-    CClass3(PyVM*, const string& id) :m_id(id) { }
-    ~CClass3() {  }
+	CClass3(PyVM*, const std::string& id) :m_id(id) { }
+	~CClass3() = default;
 
-    string m_id;
+	std::string m_id;
 };
 
 
-string gettingInstance(CClass3* inst) {
-    cout << "got instance " << inst->m_id << endl;
+std::string gettingInstance(CClass3* inst) {
+	std::cout << "got instance " << inst->m_id << std::endl;
     return inst->m_id;
 }
 
 TEST_F(PyVMTest, CInstanceInitFromPyPassedAsArgument_callsFunc) {
-    auto classObj = mod->class_<CClass3>("CClass3", CtorDef<string>());
+	auto classObj = mod->class_<CClass3>("CClass3", CtorDef<std::string>());
     mod->def("gettingInstance", gettingInstance);
     vm->call("test_module.callWithInstance");
 }
@@ -550,8 +550,8 @@ TEST_F(PyVMTest, testMapItter){
 TEST_F(PyVMTest, testStrMapItter){	
     StrDictObject* objDict = new StrDictObject;
     auto dictObjRef =  vm->alloc(objDict);
-    objDict->v.insert(std::pair<string,ObjRef>("a",vm->makeFromT((int)42) ));
-    objDict->v.insert(std::pair<string,ObjRef>("c",vm->makeFromT((int)43) ));	
+	objDict->v.insert(std::pair<std::string,ObjRef>("a",vm->makeFromT((int)42) ));
+	objDict->v.insert(std::pair<std::string,ObjRef>("c",vm->makeFromT((int)43) ));
 
     EXPECT_NO_THROW_PYS( vm->call("test_module.testStrMapItter",dictObjRef) );
 }
@@ -590,8 +590,8 @@ std::function<T> make_function(T *t) {
 
 TEST_F(PyVMTest, c_func_lambda) {
     int gota = 0;
-    string gotb;
-    std::function<void(int, const string&)> f = [&](int a, const string& b) {
+	std::string gotb;
+	std::function<void(int, const std::string&)> f = [&](int a, const std::string& b) {
         gota = a;
         gotb = b;
     };
@@ -606,10 +606,12 @@ TEST_F(PyVMTest, string_slice) {
 
 
 TEST_F(PyVMTest, import_callback) {
-    vm->setImportCallback([](const string& name) {
-        auto p = unique_ptr<istream>(new ifstream("./" + name + ".pyc", ios::binary));
+	vm->setImportCallback([](const std::string& name) {
+
+		auto p = std::make_unique<std::ifstream>("./" + name + ".pyc", std::ios::binary);
+
         CHECK(p->good(), "Failed opening module " << name);
-        return make_pair(std::move(p), true);        
+		return std::make_pair(std::move(p), true);
     });
     EXPECT_NO_THROW_PYS( vm->call("test_module.testImportCallback"));
 }
@@ -621,12 +623,12 @@ void testMemLeak(PyVM* vm) {
     for(int i = 0; i < 100; ++i) {
         {
             StateClearer sc(vm);
-            cout << "refs=" << vm->objPool().countRefs() << " obj=" << vm->objPool().size() << endl;
+			std::cout << "refs=" << vm->objPool().countRefs() << " obj=" << vm->objPool().size() << std::endl;
             vm->call("test_module.testMem");
-            cout << "refs=" << vm->objPool().countRefs() << " obj=" << vm->objPool().size() << endl;
+			std::cout << "refs=" << vm->objPool().countRefs() << " obj=" << vm->objPool().size() << std::endl;
         }
 
-        cout << "refs=" << vm->objPool().countRefs() << " obj=" << vm->objPool().size() << endl;
+		std::cout << "refs=" << vm->objPool().countRefs() << " obj=" << vm->objPool().size() << std::endl;
     }
 
 }

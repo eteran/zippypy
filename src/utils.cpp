@@ -9,8 +9,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "utils.h"
+#include "PyVM/utils.h"
 #include <chrono>
+#include <cassert>
 
 #ifdef WIN32
 
@@ -44,11 +45,13 @@ std::string utf8FromWstr(const std::wstring &s) {
 #else
 
 bool wstrFromUtf8(const std::string &s, std::wstring *out) {
+	assert("Implement Me" && 0);
 	return false;
 }
 
 std::string utf8FromWstr(const std::wstring &s) {
 	std::string s2;
+	assert("Implement Me" && 0);
 	return s2;
 }
 #endif
@@ -85,7 +88,7 @@ std::string extractFileNameWithoutExtension(const std::string &path) {
 }
 
 uint64_t msecTime() {
-	std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+	auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	return ms.count();
 }
 
@@ -114,6 +117,6 @@ void MessageBoxCall() {
 }
 
 void consoleSetColor(int col) {
-	printf("SetColor!\n");
+	(void)col;
 }
 #endif

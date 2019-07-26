@@ -8,21 +8,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "../src/PyVM.h"
-#include "../src/objects.h"
-#include "../src/PyCompile.h"
+
+#include "PyVM/PyVM.h"
+#include "PyVM/objects.h"
+#include "PyVM/PyCompile.h"
 
 #include "myTest.h"
 
+std::vector<Test*> Test::s_allTests;
+
 // main for running tests
-int main()
-{
-    runAllTests();
-    return 0;
+int main() {
+	runAllTests();
 }
 
 
-#if USE_CPYTHON
+#ifdef USE_CPYTHON
 // main for interactive interpreter
 int imain()
 {
@@ -37,7 +38,7 @@ int xmain()
     PyVM vm;
     vm.importPycFile("C:\\projects\\PyVM\\test.pyc");
 
-    string comp;
+	std::string comp;
     compileTextToPycBuf(R"**(
 def pyfunc(a, b):
     return a + b;
@@ -46,7 +47,7 @@ print pyfunc(1, 2)
 
     auto module = vm.importPycBuf(comp);
 
-    cout << extract<int>(vm.call("test2.pyfunc", 2, 3)) << endl;
+	std::cout << extract<int>(vm.call("test2.pyfunc", 2, 3)) << std::endl;
 
     return 0;
 }

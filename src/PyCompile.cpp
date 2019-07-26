@@ -9,8 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "PyCompile.h"
-#include "log.h"
+#include "PyVM/PyCompile.h"
+#include "PyVM/log.h"
 
 #ifdef USE_CPYTHON
 
